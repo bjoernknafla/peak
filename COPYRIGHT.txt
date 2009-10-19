@@ -1,3 +1,4 @@
+peak - parallelism exploration assembly kit
 Copyright (c) 2009, Bjoern Knafla
 http://www.bjoernknafla.com/
 All rights reserved.
