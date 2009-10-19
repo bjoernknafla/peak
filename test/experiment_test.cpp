@@ -1,6 +1,6 @@
 /*
  *  experiment_test.cpp
- *  hive
+ *  peak
  *
  *  Created by Björn Knafla on 16.10.09.
  *  Copyright 2009 Bjoern Knafla www.bjoernknafla.com. All rights reserved.
@@ -154,6 +154,156 @@ SUITE(experiment)
         }
     
     }
+    
+    
+    namespace 
+    {
+        
+        struct peak_queue_context_s {
+            
+        };
+        
+        // Must be assignment-copyable.
+        struct data_s {
+            // Add content.
+            // TODO: @todo Check if a lookaside queue implementation is 
+            //             possible.
+        };
+        
+        // MPMC unbound fifo queue nodes that are single-linked.
+        struct peak_mpmc_endspinlock_queue_node_s {
+            
+            struct peak_mpmc_endspinlock_queue_node_s *next;
+            
+            struct data_s data;
+            
+        };
+        
+        // Multi-producer-multi-consumer unbound fifo queue with
+        // spinlocks protecting access to the head and tail node.
+        //
+        // Implementations uses the last consumed node as a dummy element.
+        struct peak_mpmc_endspinlock_queue_s {
+          
+            struct peak_mpmc_endspinlock_queue_node_s *last_produced;
+            struct peak_mpmc_endspinlock_queue_node_s *last_consumed;
+            
+            
+        };
+        
+        // Allocates memory and initializes the queue.
+        //
+        // Aside the allocator specified in the context the global malloc
+        // might be called by platform service functions.
+        //
+        // Doesn't take over ownership of queue_ctxt - you are responsible to
+        // keep it alive until the queue is destroyed.
+        //
+        // @attention Don't call concurrently for the same or an already
+        //            created (and not destroyed) queue.
+        int peak_mpmc_endspinlock_queue_create(struct peak_mpmc_endspinlock_queue_s **queue,
+                                               struct peak_queue_context_s *queue_ctxt);
+        
+        //
+        // Aside the deallocator specified in the context the global free
+        // might be called by platform service functions.
+        // queue_ctxt can be NULL. If non-NULL the stored queue context is 
+        // returned in it.
+        //
+        // @attention Don't call concurrently for the same queue or an invalid
+        //            queue (not created or already destroyed).
+        int peak_mpmc_endspinlock_queue_destroy(struct peak_mpmc_endspinlock_queue_s **queue,
+                                                 struct peak_queue_context_s *queue_ctxt);
+        
+        // int peak_mpmc_endspinlock_queue_insert();
+        // int peak_mpmc_endspinlock_queue_remove();
+        
+
+        void peak_mpmc_endspinlock_queue_trypush(struct peak_mpmc_endspinlock_queue_s *queue, struct peak_mpmc_endspinlock_queue_node_s *new_node)
+        {
+            assert(NULL != queue);
+            assert(NULL != new_node);
+            assert(peak_is_aligned(queue->last_produced.next, sizeof(void*)));
+            assert(peak_is_aligned(new_node->next, sizeof(void*)));
+            
+            new_node->next = NULL;
+            
+            int retval = amp_raw_mutex_lock(&queue->producer_mutex);
+            assert(AMP_SUCCESS == retval);
+            {
+                // The next two instructions could be done in one atomic 
+                // exchange.
+                struct peak_mpmc_endspinlock_queue_node_s *last_produced = queue->last_produced;
+                queue->last_produced = new_node;
+                
+                // If memory storing is atomic this could be done outside the
+                // ciritcal section.
+                last_produced->next = new_node;
+            }
+            retval = amp_raw_mutex_unlock(&queue->producer_mutex);
+            assert(AMP_SUCCESS == retval);
+        }
+        
+        // Returns NULL if no node was ready to be consumed while calling.
+        // If non-NULL is returned the caller takes over memory ownership.
+        struct peak_mpmc_endspinlock_queue_node_s *
+        peak_mpmc_endspinlock_queue_trypop(struct peak_mpmc_endspinlock_queue_s *queue)
+        {
+            assert(NULL != queue);
+            assert(peak_is_aligned(queue->last_consumed.next, sizeof(void*)));
+            
+            struct peak_mpmc_endspinlock_queue_node_s *consume = NULL;
+            
+            // Lock the dummy / sentry node. The data to return is contained
+            // in the next node (if currently existent / not-NULL).
+            // By locking the mutex the memory content of the next pointer
+            // is synchronized. As the next pointer is only set after
+            // a producer entered a new node its content can be already 
+            // consumed.
+            // The next node to consume becomes the new dummy / sentinel node.
+            // The data it hold is copied to the node to return and then the
+            // nodes data is erased for debug reasons.
+            int retval = amp_raw_mutex_lock(&queue->consumer_mutex);
+            assert(AMP_SUCCESS == retval);
+            {
+                // TODO: @todo Add a helper function to load pointer mem in an
+                //             atomic relaxed way.
+                struct peak_mpmc_endspinlock_queue_node_s *new_last = queue->last_consumed.next;
+                
+                if (NULL != new_last) {
+                    // If more nodes than the last consumed (sentry / dummy)
+                    // node are contained, then use the current dummy node
+                    // to return the data contained in the next data node.
+                    consume = queue->last_consumed;
+                    
+                    // The next data node becomes the new dummy / sentry node.
+                    queue->last_consumed = new_last;
+                    
+                    // Copy the data into the node to return.
+                    consume_node->data = new_last->data;
+                    
+#if !defined(NDEBUG)
+                    new_last->data = {NULL};
+#endif
+                }
+            }
+            retval = amp_raw_mutex_unlock(&queue->consumer_mutex);
+            assert(AMP_SUCCESS == retval);
+            
+            // Erase the next pointer in the node to return to prevent
+            // accidential access with a data race.
+            consume->next = NULL;
+            
+            
+            return consume;
+        }
+        
+        
+        
+        
+        
+    } // anonymous namespace
+    
     
     
     TEST(playground)

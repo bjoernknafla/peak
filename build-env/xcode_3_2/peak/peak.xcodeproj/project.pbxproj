@@ -114,7 +114,6 @@
 			isa = PBXGroup;
 			children = (
 				321E22A1108C9A450080BFE6 /* c */,
-				321E22A3108C9A450080BFE6 /* cpp */,
 			);
 			name = src;
 			path = ../../../src;
@@ -133,13 +132,6 @@
 			children = (
 			);
 			path = peak;
-			sourceTree = "<group>";
-		};
-		321E22A3108C9A450080BFE6 /* cpp */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = cpp;
 			sourceTree = "<group>";
 		};
 		321E22A4108C9A450080BFE6 /* test */ = {
