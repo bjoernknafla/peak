@@ -1,0 +1,16 @@
+//
+//  peak.xcconfig
+//  peak
+//
+//  Created by Björn Knafla on 16.10.09.
+//  Copyright 2009 Bjoern Knafla www.bjoernknafla.com. All rights reserved.
+//
+
+
+#include "compiler_warnings"
+
+PEAK_HEADER_PATHS = "$(SRCROOT)/../../../src/c/"
+
+ALWAYS_SEARCH_USER_PATHS = NO
+
+HEADER_SEARCH_PATHS = $(PEAK_HEADER_PATHS)

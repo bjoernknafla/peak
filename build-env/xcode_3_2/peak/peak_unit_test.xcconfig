@@ -1,0 +1,16 @@
+//
+//  peak_unit_test.xcconfig
+//  peak
+//
+//  Created by Björn Knafla on 16.10.09.
+//  Copyright 2009 Bjoern Knafla www.bjoernknafla.com. All rights reserved.
+//
+
+#include "UnitTest++"
+#include "peak"
+
+HEADER_SEARCH_PATHS = $(PEAK_HEADER_PATHS) $(UNITTESTCPP_HEADER_PATH)
+LIBRARY_SEARCH_PATHS = $(UNITTESTCPP_LIBRARY_PATH)
+
+GCC_PRECOMPILE_PREFIX_HEADER = $(PRECOMPILE_PREFIX_HEADER)
+GCC_PREFIX_HEADER = $(PREFIX_HEADER)
