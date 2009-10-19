@@ -43,7 +43,7 @@ looking forward to hear from you!
 
 Bjoern Knafla  
 Bjoern Knafla Parallelization + AI + Gamedev Consulting  
-[amp@bjoernknafla.com](mailto:peak@bjoernknafla.com)  
+[peak@bjoernknafla.com](mailto:peak@bjoernknafla.com)  
 [www.bjoernknafla.com](http://www.bjoernknafla.com)  
 
 
@@ -53,7 +53,7 @@ Bjoern Knafla Parallelization + AI + Gamedev Consulting
 of the license contained in the file COPYRIGHT.txt distributed with this
 package. This license is equal to the Simplified BSD License.
 
-*amp* was developed to parallelize the AiGameDev.com Sandbox and as a 
+*peak* was developed to parallelize the AiGameDev.com Sandbox and as a 
 foundation to experiment and research job pools for computer and video games.
 Joint ownership of the copyright belongs to [AiGameDev.com](http://AiGameDev.com).
 
