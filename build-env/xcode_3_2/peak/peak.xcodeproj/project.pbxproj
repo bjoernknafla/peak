@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		321E22B9108CA41F0080BFE6 /* libUnitTest++.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 321E22B8108CA41F0080BFE6 /* libUnitTest++.a */; };
 		321E22C9108CA4BE0080BFE6 /* unit_tests_main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 321E22A5108CA2A40080BFE6 /* unit_tests_main.cpp */; };
-		321E22CA108CA4BE0080BFE6 /* experiment_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 321E22A6108CA2A40080BFE6 /* experiment_test.cpp */; };
+		321E4387108DBD160080BFE6 /* data_alignment_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 321E4386108DBD160080BFE6 /* data_alignment_test.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,6 +23,7 @@
 		321E22AA108CA2B30080BFE6 /* peak_unit_test.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = peak_unit_test.xcconfig; sourceTree = "<group>"; };
 		321E22AE108CA34E0080BFE6 /* peak_unit_tests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = peak_unit_tests; sourceTree = BUILT_PRODUCTS_DIR; };
 		321E22B8108CA41F0080BFE6 /* libUnitTest++.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libUnitTest++.a"; path = "../../../../ForeignProjects/unittest-cpp/UnitTest++/libUnitTest++.a"; sourceTree = SOURCE_ROOT; };
+		321E4386108DBD160080BFE6 /* data_alignment_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = data_alignment_test.cpp; sourceTree = "<group>"; };
 		D2AAC046055464E500DB518D /* libpeak.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libpeak.a; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -139,6 +140,7 @@
 			children = (
 				321E22A5108CA2A40080BFE6 /* unit_tests_main.cpp */,
 				321E22A6108CA2A40080BFE6 /* experiment_test.cpp */,
+				321E4386108DBD160080BFE6 /* data_alignment_test.cpp */,
 			);
 			name = test;
 			path = ../../../test;
@@ -224,7 +226,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				321E22C9108CA4BE0080BFE6 /* unit_tests_main.cpp in Sources */,
-				321E22CA108CA4BE0080BFE6 /* experiment_test.cpp in Sources */,
+				321E4387108DBD160080BFE6 /* data_alignment_test.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
