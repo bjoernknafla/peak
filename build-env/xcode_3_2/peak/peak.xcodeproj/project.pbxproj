@@ -10,7 +10,33 @@
 		321E22B9108CA41F0080BFE6 /* libUnitTest++.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 321E22B8108CA41F0080BFE6 /* libUnitTest++.a */; };
 		321E22C9108CA4BE0080BFE6 /* unit_tests_main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 321E22A5108CA2A40080BFE6 /* unit_tests_main.cpp */; };
 		321E4387108DBD160080BFE6 /* data_alignment_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 321E4386108DBD160080BFE6 /* data_alignment_test.cpp */; };
+		32C16622109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C16621109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.c */; };
+		32C18724109F5EB9001852EE /* amp_raw.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 32C1871F109F5E78001852EE /* amp_raw.framework */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		32C1871E109F5E78001852EE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 32C186CF109F33FB001852EE /* amp_raw.framework */;
+			remoteInfo = amp_raw;
+		};
+		32C18720109F5E78001852EE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 325928BB1058759300D5379D /* amp_unit_tests */;
+			remoteInfo = amp_unit_tests;
+		};
+		32C18722109F5EAE001852EE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 32C186CE109F33FB001852EE /* amp_raw */;
+			remoteInfo = amp_raw;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		321E229D108C9A450080BFE6 /* COPYRIGHT.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = COPYRIGHT.txt; path = ../../../COPYRIGHT.txt; sourceTree = SOURCE_ROOT; };
@@ -24,6 +50,12 @@
 		321E22AE108CA34E0080BFE6 /* peak_unit_tests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = peak_unit_tests; sourceTree = BUILT_PRODUCTS_DIR; };
 		321E22B8108CA41F0080BFE6 /* libUnitTest++.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libUnitTest++.a"; path = "../../../../ForeignProjects/unittest-cpp/UnitTest++/libUnitTest++.a"; sourceTree = SOURCE_ROOT; };
 		321E4386108DBD160080BFE6 /* data_alignment_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = data_alignment_test.cpp; sourceTree = "<group>"; };
+		321E440A108F49570080BFE6 /* error_and_exception_handling.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = error_and_exception_handling.txt; sourceTree = "<group>"; };
+		32C1661F109DF105001852EE /* concept_names.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = concept_names.txt; sourceTree = "<group>"; };
+		32C16620109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_mpmc_unbound_locked_fifo_queue.h; sourceTree = "<group>"; };
+		32C16621109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = peak_mpmc_unbound_locked_fifo_queue.c; sourceTree = "<group>"; };
+		32C18718109F5E78001852EE /* amp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = amp.xcodeproj; path = ../../../../amp/build_env/xcode_3_2/amp/amp.xcodeproj; sourceTree = SOURCE_ROOT; };
+		32C18725109F5ED9001852EE /* amp.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = amp.xcconfig; sourceTree = "<group>"; };
 		D2AAC046055464E500DB518D /* libpeak.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libpeak.a; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -32,6 +64,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				32C18724109F5EB9001852EE /* amp_raw.framework in Frameworks */,
 				321E22B9108CA41F0080BFE6 /* libUnitTest++.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -49,6 +82,7 @@
 		08FB7794FE84155DC02AAC07 /* peak */ = {
 			isa = PBXGroup;
 			children = (
+				32C18718109F5E78001852EE /* amp.xcodeproj */,
 				08FB7795FE84155DC02AAC07 /* Source */,
 				C6A0FF2B0290797F04C91782 /* Documentation */,
 				321E229B108C99E20080BFE6 /* External Frameworks and Libraries */,
@@ -99,6 +133,7 @@
 				321E22A8108CA2B30080BFE6 /* compiler_warnings.xcconfig */,
 				321E22A9108CA2B30080BFE6 /* peak.xcconfig */,
 				321E22AA108CA2B30080BFE6 /* peak_unit_test.xcconfig */,
+				32C18725109F5ED9001852EE /* amp.xcconfig */,
 			);
 			name = "Configuration Settings";
 			sourceTree = "<group>";
@@ -106,6 +141,7 @@
 		321E229E108C9A450080BFE6 /* doc */ = {
 			isa = PBXGroup;
 			children = (
+				321E4409108F49570080BFE6 /* notes */,
 			);
 			name = doc;
 			path = ../../../doc;
@@ -131,6 +167,8 @@
 		321E22A2108C9A450080BFE6 /* peak */ = {
 			isa = PBXGroup;
 			children = (
+				32C16620109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.h */,
+				32C16621109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.c */,
 			);
 			path = peak;
 			sourceTree = "<group>";
@@ -145,6 +183,24 @@
 			name = test;
 			path = ../../../test;
 			sourceTree = SOURCE_ROOT;
+		};
+		321E4409108F49570080BFE6 /* notes */ = {
+			isa = PBXGroup;
+			children = (
+				321E440A108F49570080BFE6 /* error_and_exception_handling.txt */,
+				32C1661F109DF105001852EE /* concept_names.txt */,
+			);
+			path = notes;
+			sourceTree = "<group>";
+		};
+		32C18719109F5E78001852EE /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				32C1871F109F5E78001852EE /* amp_raw.framework */,
+				32C18721109F5E78001852EE /* amp_unit_tests */,
+			);
+			name = Products;
+			sourceTree = "<group>";
 		};
 		C6A0FF2B0290797F04C91782 /* Documentation */ = {
 			isa = PBXGroup;
@@ -179,6 +235,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				32C18723109F5EAE001852EE /* PBXTargetDependency */,
 			);
 			name = peak_unit_tests;
 			productName = peak_unit_tests;
@@ -212,6 +269,12 @@
 			hasScannedForEncodings = 1;
 			mainGroup = 08FB7794FE84155DC02AAC07 /* peak */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = 32C18719109F5E78001852EE /* Products */;
+					ProjectRef = 32C18718109F5E78001852EE /* amp.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				D2AAC045055464E500DB518D /* peak */,
@@ -220,6 +283,23 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXReferenceProxy section */
+		32C1871F109F5E78001852EE /* amp_raw.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = amp_raw.framework;
+			remoteRef = 32C1871E109F5E78001852EE /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		32C18721109F5E78001852EE /* amp_unit_tests */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = amp_unit_tests;
+			remoteRef = 32C18720109F5E78001852EE /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
+
 /* Begin PBXSourcesBuildPhase section */
 		321E22AB108CA34E0080BFE6 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -227,6 +307,7 @@
 			files = (
 				321E22C9108CA4BE0080BFE6 /* unit_tests_main.cpp in Sources */,
 				321E4387108DBD160080BFE6 /* data_alignment_test.cpp in Sources */,
+				32C16622109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -238,6 +319,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		32C18723109F5EAE001852EE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = amp_raw;
+			targetProxy = 32C18722109F5EAE001852EE /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		1DEB91EC08733DB70010E9CD /* Debug */ = {

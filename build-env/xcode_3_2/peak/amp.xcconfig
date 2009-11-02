@@ -1,0 +1,16 @@
+//
+//  amp.xcconfig
+//  peak
+//
+//  Created by Björn Knafla on 02.11.09.
+//  Copyright 2009 Bjoern Knafla www.bjoernknafla.com. All rights reserved.
+//
+
+// While using the amp framework no additional header search paths must be set.
+
+AMP_HEADER_PATHS = ""
+
+// "/Users/bknafla/Projects/amp/src/c/"
+
+
+AMP_PREPROCESSOR_DEFINITIONS = AMP_USE_LIBDISPATCH_SEMAPHORES AMP_USE_PTHREADS

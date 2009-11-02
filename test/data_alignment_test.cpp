@@ -25,6 +25,9 @@
 // See http://www.gamasutra.com/view/feature/3975/data_alignment_part_2_objects_on_.php
 // See http://developer.amd.com/documentation/articles/pages/1213200696.aspx
 // See Steven Goodwin, Cross-Platform Game Programming, Charles River Media, 2005
+// See MSDN Windows Data Alignment on IPF, x86, and x64 http://msdn.microsoft.com/en-us/library/aa290049(VS.71).aspx
+// See Game Engine Architecture by Jason Gregory - but beware of code error in
+// aligned alloc (reserving 1 Byte but storing 4 Bytes for malloc bookkeeping).
 //
 // SSE vector instructions work on 16byte aligned data
 // Data alignment also important to enable atomicity of memory access

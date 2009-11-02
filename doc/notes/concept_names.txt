@@ -1,0 +1,20 @@
+concept_names.txt
+
+
+Short names that state the main ideas of peak (asynchronity, compute groups are fed by queues, data- and task-parallel job assignments).
+
+peak_compute_func
+peak_compute_thread
+peak_compute_engine (???)
+peak_compute_group
+peak_compute_cluster
+peak_fifo_queue
+peak_lifo_queue
+peak_ring_buffer
+peak_work_stealing_queue
+peak_counter
+peak_data_parallel_context (too long?)
+peak_task_parallel_context (too long?)
+peak_affinity
+peak_category/trace
+peak_cancellation_group (aka MS ConcRT)

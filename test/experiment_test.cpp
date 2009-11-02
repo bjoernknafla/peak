@@ -14,69 +14,6 @@
 #include <cstddef>
 
 
-#if 0
-namespace 
-{
- 
-    using std::size_t;
-    
-    
-#define HIVE_SUCCESS 0;
- 
-    
-    typedef void (*compute_engine_func)(void *ce_ctxt);
-    
-    
-    typedef size_t id_t;
-    
-    struct compute_engine_group_s;
-    
-    
-    typedef void (*queue_node_run_func)(void *user_context);
-    
-    
-    struct mpmc_unbound_fifo_queue_node {
-        struct mpmc_unbound_fifo_queue_node *next;
-        
-        void *user_context;
-        queue_node_run_func func;
-    };
-    
-    struct mpmc_unbound_fifo_queue {
-      
-        struct mpmc_unbound_fifo_queue_node *last_produced_node;
-        struct mpmc_unbound_fifo_queue_node *last_consumed_node;
-        
-        
-    };
-    
-    
-    struct compute_engine_s {
-      
-        id_t id;
-        
-        struct compute_engine_group_s *group;
-        
-        
-        /* Add packing to prevent cache line false sharing */
-        
-    };
-    
-    
-    struct compute_engine_group_s {
-      
-        size_t ce_count;
-        struct compute_engine_s *ce_contexts;
-        compute_engine_func ce_func;
-        
-        struct mpmc_unbound_fifo_queue *group_queue;
-    };
-    
-    
-    
-} // anonymous
-#endif
-
 
 SUITE(experiment)
 {
@@ -188,7 +125,14 @@ SUITE(experiment)
             struct peak_mpmc_endspinlock_queue_node_s *last_produced;
             struct peak_mpmc_endspinlock_queue_node_s *last_consumed;
             
+            struct amp_raw_mutex_s producer_mutex;
+            struct amp_raw_mutex_s consumer_mutex;
+            // TODO: @todo Replace next_mutex with atomic mem access and prevent 
+            //             hw/compiler instruction reordering.
+            // TODO: @todo Detect empty case and only lock then.
+            struct amp_raw_mutex_s next_mutex;
             
+            struct peak_queue_context_s *queue_context;
         };
         
         // Allocates memory and initializes the queue.
@@ -213,7 +157,7 @@ SUITE(experiment)
         // @attention Don't call concurrently for the same queue or an invalid
         //            queue (not created or already destroyed).
         int peak_mpmc_endspinlock_queue_destroy(struct peak_mpmc_endspinlock_queue_s **queue,
-                                                 struct peak_queue_context_s *queue_ctxt);
+                                                struct peak_queue_context_s *queue_ctxt);
         
         // int peak_mpmc_endspinlock_queue_insert();
         // int peak_mpmc_endspinlock_queue_remove();
@@ -223,8 +167,8 @@ SUITE(experiment)
         {
             assert(NULL != queue);
             assert(NULL != new_node);
-            assert(peak_is_aligned(queue->last_produced.next, sizeof(void*)));
-            assert(peak_is_aligned(new_node->next, sizeof(void*)));
+            assert(peak_is_aligned(&(queue->last_produced.next), sizeof(void*)));
+            assert(peak_is_aligned(&(new_node->next), sizeof(void*)));
             
             new_node->next = NULL;
             
@@ -238,7 +182,15 @@ SUITE(experiment)
                 
                 // If memory storing is atomic this could be done outside the
                 // ciritcal section.
-                last_produced->next = new_node;
+                // Important: instruction mustn't move up (or outside critical
+                // section).
+                retval = amp_raw_mutex_lock(&queue->next_mutex);
+                assert(AMP_SUCCESS == retval);
+                {
+                    last_produced->next = new_node;
+                }
+                retval = amp_raw_mutex_unlock(&queue->next_mutex);
+                assert(AMP_SUCCESS == retval);
             }
             retval = amp_raw_mutex_unlock(&queue->producer_mutex);
             assert(AMP_SUCCESS == retval);
@@ -250,7 +202,7 @@ SUITE(experiment)
         peak_mpmc_endspinlock_queue_trypop(struct peak_mpmc_endspinlock_queue_s *queue)
         {
             assert(NULL != queue);
-            assert(peak_is_aligned(queue->last_consumed.next, sizeof(void*)));
+            assert(peak_is_aligned(&(queue->last_consumed.next), sizeof(void*)));
             
             struct peak_mpmc_endspinlock_queue_node_s *consume = NULL;
             
@@ -268,7 +220,14 @@ SUITE(experiment)
             {
                 // TODO: @todo Add a helper function to load pointer mem in an
                 //             atomic relaxed way.
-                struct peak_mpmc_endspinlock_queue_node_s *new_last = queue->last_consumed.next;
+                retval = amp_raw_mutex_lock(&queue->next_mutex);
+                assert(AMP_SUCCESS == retval);
+                
+                    struct peak_mpmc_endspinlock_queue_node_s *new_last = queue->last_consumed.next;
+                
+                retval = amp_raw_mutex_unlock(&queue->next_mutex);
+                assert(AMP_SUCCESS == retval);
+                
                 
                 if (NULL != new_last) {
                     // If more nodes than the last consumed (sentry / dummy)

@@ -1,0 +1,27 @@
+Error and Exception Handling
+
+First iteration doesn't allow exceptions or error codes to leave a job / kernel.
+In the end I might want to differentiate: no-error-leaking jobs and jobs which
+might even return a value (a future or primise) and allow packaging of errors
+and exceptions and sending them to the future.
+
+To allow aboning of compute engine threads let the first one encountering an
+error set a flag visible to all? Only helps with fine-grained jobs.
+
+Best first iteration: immediate crashing on ignoring errors - and: only schedule
+kernels and jobs that don't leak errors and exceptions.
+
+
+ENOMEM
+
+On Twitter learned from @repi, @disouragedone_ , @msinilo , @daniel_colin that
+games typically don't handle the out of memory case but assert on it and crash.
+On consoles (and PCs for cross platform reasons) know how much memory your game
+uses at max in every moment and provide mem pools to use. Collect mem usage
+statistics and be aware of the finitness of mem.
+
+
+References
+
+- Joe Duffy on his blog about handling exceptions for data-parallelism that looks like a typical sequential function/hides the parallelism: http://www.bluebytesoftware.com/blog/2009/06/24/ConcurrencyAndExceptions.aspx
+- .NET cancellation framework: http://blogs.msdn.com/pfxteam/archive/2009/06/22/9791840.aspx
