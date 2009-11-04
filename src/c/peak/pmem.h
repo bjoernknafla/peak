@@ -12,6 +12,8 @@
  *
  * TODO: @todo Use as start for pmem library to model thread aware memory
  *             allocators.
+ *
+ * TODO: @todo Add restrict keyword to memory functions.
  */
 
 #ifndef PEAK_pmem_H

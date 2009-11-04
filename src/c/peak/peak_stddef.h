@@ -20,10 +20,10 @@ extern "C" {
 #endif
 
 
-#define PEAK_SUCCESS AMP_SUCCESS;
-#define PEAK_BOOL AMP_BOOL;
-#define PEAK_TRUE AMP_TRUE;
-#define PEAK_FALSE AMP_FALSE;
+#define PEAK_SUCCESS AMP_SUCCESS
+#define PEAK_BOOL AMP_BOOL
+#define PEAK_TRUE AMP_TRUE
+#define PEAK_FALSE AMP_FALSE
 
     
 #if defined(__cplusplus)

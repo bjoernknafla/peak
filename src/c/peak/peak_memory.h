@@ -29,6 +29,13 @@
 extern "C" {
 #endif
 
+    
+    /* TODO: @todo Decide if it is a good idea or not to have a name for NULL
+     *             to keep alloc usage clear.
+     *             extern void * const peak_default_allocator;
+     */
+#define PEAK_NULL_ALLOCATOR NULL
+    
     /**
      * Function pointer to a memory allocation function that might use the
      * allocator_context pointer to allocate memory from a special area of

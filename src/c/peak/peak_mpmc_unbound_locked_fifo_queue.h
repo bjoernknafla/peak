@@ -38,7 +38,7 @@
 
 #include <stddef.h>
 
-#include <amp_raw/amp_raw.h>
+#include <amp/amp_raw.h>
 
 #include <peak/peak_memory.h>
 
@@ -58,7 +58,7 @@ extern "C" {
          * all nodes still enqueued.
          */
         void *node_allocator_context;
-        /* peak_alloc_func node_alloc; */
+        peak_alloc_func node_alloc;
         peak_dealloc_func node_dealloc;
     };
     
@@ -67,6 +67,7 @@ extern "C" {
      */
     struct peak_queue_node_data_s {
         
+        void *context;
     };
     
     struct peak_unbound_fifo_queue_node_s {

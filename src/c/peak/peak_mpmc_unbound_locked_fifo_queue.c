@@ -258,6 +258,15 @@ struct peak_unbound_fifo_queue_node_s* peak_mpmc_unbound_locked_fifo_queue_trypo
              */
             consume->data = new_last->data;
             
+            /* Erase the next pointer in the node to return to prevent
+             * accidential access with a data race.
+             * 
+             * TODO: @todo Move this out of the ciritcal section if no further
+             *             checks if consume isn't NULL are necessary. Profile.
+             */
+            consume->next = NULL;
+
+            
 #if !defined(NDEBUG)
             /* TODO: @toto Set new_last->data to 0, NULL, or whatever.
              */
@@ -266,12 +275,6 @@ struct peak_unbound_fifo_queue_node_s* peak_mpmc_unbound_locked_fifo_queue_trypo
     }
     retval = amp_raw_mutex_unlock(&queue->consumer_mutex);
     assert(AMP_SUCCESS == retval);
-    
-    /* Erase the next pointer in the node to return to prevent
-     * accidential access with a data race.
-     */
-    consume->next = NULL;
-    
     
     return consume;    
 }
