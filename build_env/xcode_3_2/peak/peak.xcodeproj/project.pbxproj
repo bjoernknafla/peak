@@ -10,8 +10,8 @@
 		321E22B9108CA41F0080BFE6 /* libUnitTest++.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 321E22B8108CA41F0080BFE6 /* libUnitTest++.a */; };
 		321E22C9108CA4BE0080BFE6 /* unit_tests_main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 321E22A5108CA2A40080BFE6 /* unit_tests_main.cpp */; };
 		321E4387108DBD160080BFE6 /* data_alignment_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 321E4386108DBD160080BFE6 /* data_alignment_test.cpp */; };
+		326776CA10A18E6400CC7576 /* libamp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 326776C510A18E3D00CC7576 /* libamp.a */; };
 		32C16622109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C16621109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.c */; };
-		32C18724109F5EB9001852EE /* amp_raw.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 32C1871F109F5E78001852EE /* amp_raw.framework */; };
 		32C1872F10A08F54001852EE /* peak_memory.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C1872E10A08F54001852EE /* peak_memory.c */; };
 		32C1875110A0991C001852EE /* peak_data_alignment.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C1875010A0991C001852EE /* peak_data_alignment.c */; };
 		32C1877B10A0CC6D001852EE /* pmem_generic.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C1877A10A0CC6D001852EE /* pmem_generic.c */; };
@@ -19,26 +19,33 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		326776C410A18E3D00CC7576 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 32C1883710A18D1D001852EE /* libamp.a */;
+			remoteInfo = amp_static_library;
+		};
+		326776CB10A18E7900CC7576 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 32C1883610A18D1D001852EE /* amp_static_library */;
+			remoteInfo = amp_static_library;
+		};
 		32C1871E109F5E78001852EE /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = 32C186CF109F33FB001852EE /* amp_raw.framework */;
+			remoteGlobalIDString = 32C186CF109F33FB001852EE;
 			remoteInfo = amp_raw;
 		};
 		32C18720109F5E78001852EE /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = 325928BB1058759300D5379D /* amp_unit_tests */;
+			remoteGlobalIDString = 325928BB1058759300D5379D;
 			remoteInfo = amp_unit_tests;
-		};
-		32C18722109F5EAE001852EE /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = 32C186CE109F33FB001852EE /* amp_raw */;
-			remoteInfo = amp_raw;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -77,7 +84,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				32C18724109F5EB9001852EE /* amp_raw.framework in Frameworks */,
+				326776CA10A18E6400CC7576 /* libamp.a in Frameworks */,
 				321E22B9108CA41F0080BFE6 /* libUnitTest++.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -220,6 +227,7 @@
 			children = (
 				32C1871F109F5E78001852EE /* amp_raw.framework */,
 				32C18721109F5E78001852EE /* amp_unit_tests */,
+				326776C510A18E3D00CC7576 /* libamp.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -257,7 +265,7 @@
 			buildRules = (
 			);
 			dependencies = (
-				32C18723109F5EAE001852EE /* PBXTargetDependency */,
+				326776CC10A18E7900CC7576 /* PBXTargetDependency */,
 			);
 			name = peak_unit_tests;
 			productName = peak_unit_tests;
@@ -306,6 +314,13 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
+		326776C510A18E3D00CC7576 /* libamp.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libamp.a;
+			remoteRef = 326776C410A18E3D00CC7576 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		32C1871F109F5E78001852EE /* amp_raw.framework */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.framework;
@@ -347,10 +362,10 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		32C18723109F5EAE001852EE /* PBXTargetDependency */ = {
+		326776CC10A18E7900CC7576 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			name = amp_raw;
-			targetProxy = 32C18722109F5EAE001852EE /* PBXContainerItemProxy */;
+			name = amp_static_library;
+			targetProxy = 326776CB10A18E7900CC7576 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
