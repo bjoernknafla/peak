@@ -36,6 +36,8 @@
  * The alignment of a struct has to be a multiple of the least common multiple
  * of the alignment of its member fields.
  *
+ * TODO: @todo Change the PEAK_MEMORY_POINTER_ALIGNMENT into 
+ *             PEAK_ATOMIC_ACCESS_ALIGNMENT.
  */
 
 #ifndef PEAK_peak_data_alignment_H

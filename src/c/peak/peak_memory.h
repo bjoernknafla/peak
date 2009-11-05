@@ -56,12 +56,16 @@ extern "C" {
      * Function pointer to a memory deallocation function that might use the
      * allocator_context to return the previously used memory back to a special
      * area of memory and otherwise behaves like free.
+     *
+     * TODO: @todo Add restrit keyword.
      */
     typedef void (*peak_dealloc_func)(void *allocator_context, void *pointer);
     
     /**
      * TODO: @todo Decide if it is a good idea to have an allocator based
      *             function with and without alignment.
+     *
+     * TODO: @todo Add restrit keyword.
      */
     typedef void (*peak_dealloc_aligned_func)(void *allocator_context, 
                                               void *pointer);
@@ -76,6 +80,8 @@ extern "C" {
     
     /**
      * Wrapper around std free that ignores allocator_context.
+     *
+     * TODO: @todo Add restrit keyword.
      */
     void peak_free(void *allocator_context, void *pointer);
     

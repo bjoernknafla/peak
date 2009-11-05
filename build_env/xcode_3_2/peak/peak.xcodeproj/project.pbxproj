@@ -26,14 +26,14 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = 32C1883710A18D1D001852EE /* libamp.a */;
+			remoteGlobalIDString = 32C1883710A18D1D001852EE;
 			remoteInfo = amp_static_library;
 		};
 		326776CB10A18E7900CC7576 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 32C1883610A18D1D001852EE /* amp_static_library */;
+			remoteGlobalIDString = 32C1883610A18D1D001852EE;
 			remoteInfo = amp_static_library;
 		};
 		32C1871E109F5E78001852EE /* PBXContainerItemProxy */ = {
