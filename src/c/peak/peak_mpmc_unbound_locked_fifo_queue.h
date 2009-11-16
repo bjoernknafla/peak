@@ -10,13 +10,17 @@
 /**
  * @file
  *
- * Multiple producer multiple consumer queue which dynamically grows and shrinks
- * by pushing and poping it. Nodes are enqueued and dequeued in fifo order.
- * Locks are used to protect the producer and consumer end to minimize
- * sharing as long as the queue isn't empty or only contains one value node.
+ * Multiple producer multiple consumer (MPMC) queue which dynamically grows and 
+ * shrinks by pushing and popping it. Nodes are enqueued and dequeued in fifo
+ * order. Locks protect the queue.
  *
  * All functions other than the create and destroy functions can be called
  * concurrently and multiple times from multiple threads.
+ *
+ * peak_mpmc_unbound_locked_fifo_queue is only the core mechanism of a 
+ * MPMC queue and doesn't handle memory management of any nodes. All nodes
+ * created and handed to the queue should be created by the same allocator
+ * or need to be identifyable to know which allocator allocated their memory.
  *
  * @attention All functions other than create expect a valid (initialized, non
  *            NULL) queue to operate on.
@@ -34,6 +38,19 @@
  *
  * TODO: @todo Add a batch push enqueueing a whole list of nodes and add 
  *             functions to create this list.
+ *
+ * TODO: @todo Profile the queue - the 3 mutexes used show how to modify the 
+ *             queue into a non-locking queue (with memory that is freed
+ *             during frame syncing) but as the next node mutex isn't next
+ *             pointer specific but is a single mutex per queue it should be
+ *             a bottleneck that destroyes the independence between the 
+ *             consumer and producer mutex and as now 3 mutexes are used the
+ *             whole queue should be slower than just using one mutex for the
+ *             whole queue.
+ *
+ * TODO: @todo Make sure that the queues last_produced and last_consumed
+ *             pointers don't share the same cache line or false sharing will
+ *             kill performance (even when going lock-free).
  */
 
 #ifndef PEAK_peak_mpmc_unbound_locked_fifo_queue_H
@@ -52,21 +69,10 @@ extern "C" {
 #endif
 
     
-    struct peak_queue_context_s {
-        void *allocator_context;
-        peak_alloc_func alloc;
-        peak_dealloc_func dealloc;
-        
-        /* Node dealloc function used when destroying a queue to get rid of
-         * all nodes still enqueued.
-         */
-        void *node_allocator_context;
-        peak_alloc_func node_alloc;
-        peak_dealloc_func node_dealloc;
-    };
-    
     /**
      * Must be copy asignable.
+     *
+     * TODO: @todo Change to contain the final data used by peak.
      */
     struct peak_queue_node_data_s {
         
@@ -78,24 +84,6 @@ extern "C" {
         
         struct peak_queue_node_data_s data;
     };
-    
-    
-    
-    /**
-     * Range or batch of nodes to be enqueued at once to minimize locking
-     * overhead while pushing.
-     *
-     * Also passed back to the caller of finalize containing all non-popped
-     * nodes.
-     */
-    struct peak_unbound_fifo_queue_node_batch_s {
-        /* Node to first push into the queue */
-        struct peak_unbound_fifo_queue_node_s *push_first;
-        /* Node pushed last into the queue */
-        struct peak_unbound_fifo_queue_node_s *push_last;
-    };
-    
-    
     
     
     /**
@@ -114,71 +102,42 @@ extern "C" {
          * TODO: @todo Detect empty case and only lock then.
          */
         struct amp_raw_mutex_s next_mutex;
-#if 0
+
+        /* Memory management is moved to the caller of the queue therefore no
+         * context that stores allocators is needed.
+         * TODO: @todo Remove comment and non-used code/data.
         struct peak_queue_context_s *context;
-#endif
+         */
     };
     
     
-    
-    int peak_unbound_fifo_queue_node_batch_init(struct peak_unbound_fifo_queue_node_batch_s *batch);
-    int peak_unbound_fifo_queue_node_batch_clean(struct peak_unbound_fifo_queue_node_batch_s *batch,
-                                                 void *node_allocator,
-                                                 peak_dealloc_func dealloc);
-    int peak_unbound_fifo_queue_node_batch_push(struct peak_unbound_fifo_queue_node_batch_s *batch,
-                                                struct peak_unbound_fifo_queue_node_s *node);
-    int peak_unbound_fifo_queue_node_batch_push_last_on_first(struct peak_unbound_fifo_queue_node_batch_s *first_batch,
-                                                              struct peak_unbound_fifo_queue_node_batch_s *last_batch);
-    struct peak_unbound_fifo_queue_node_s *peak_unbound_fifo_queue_node_batch_pop(struct peak_unbound_fifo_queue_node_batch_s *batch);
-    PEAK_BOOL peak_unbound_fifo_queue_node_batch_is_empty(struct peak_unbound_fifo_queue_node_batch_s *batch);
-    PEAK_BOOL peak_unbound_fifo_queue_node_batch_is_valid(struct peak_unbound_fifo_queue_node_batch_s *batch);
-    
-    
-    
-    
+
+
+
     /**
-     * Allocates memory and initializes the queue.
-     * Uses sentry_node as a dummy or sentry node that represents the last
-     * consumed node. On dequeueing the dequeued nodes data is copied into the
+     * Initializes queue to be an empty queue only containing first_sentry_node
+     * as a sentry or dummy node. 
+     * On dequeueing the dequeued nodes data is copied into the
      * sentry node and the sentry node is returned to the caller while the
-     * node that had the data takes over the role as the new sentry node.
+     * node that held the data takes over the role as the new sentry node.
      *
-     * Aside the allocator specified in the context the global malloc
-     * might be called by platform service functions.
-     *
-     * Doesn't take over ownership of context - you are responsible to
-     * keep it alive until the queue is destroyed.
+     * The queue functions don't allocate or deallocate memory directly, though
+     * through system calls malloc and free might be called indirectly.
      *
      * @attention sentry_node mustn't be NULL.
-     * @attention context must be a valid queue context and mustn't be NULL.
      *
      * @attention Don't call concurrently for the same or an already
      *            created (and not destroyed) queue.
+     *
+     * @attention All nodes enqueued must be properly memory aligned to enable
+     *            atomic access.
      */
-#if 0
-    int peak_mpmc_unbound_locked_fifo_queue_create(struct peak_mpmc_unbound_locked_fifo_queue_s **queue,
-                                                   struct peak_unbound_fifo_queue_node_s *sentry_node,
-                                                   struct peak_queue_context_s *context);
-#endif
-    
     int peak_mpmc_unbound_locked_fifo_queue_init(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
-                                                 struct peak_unbound_fifo_queue_node_s *sentry_node);
+                                                 struct peak_unbound_fifo_queue_node_s *first_sentry_node);
     
     
-    /**
-     * Finalizes and deallocates the queue and all contained nodes.
-     *
-     * Aside the deallocator specified in the context the global free
-     * might be called by platform service functions.
-     * 
-     * Doesn't destroy the context as it the queue doesn't own it.
-     *
-     * @attention Don't call concurrently for the same queue or an invalid
-     *            queue (not created or already destroyed).
-     */
-#if 0
-    int peak_mpmc_unbound_locked_fifo_queue_destroy(struct peak_mpmc_unbound_locked_fifo_queue_s *queue);
-#endif
+
+
     
     /**
      * Finalizes the queue (but doesn't free the memory it uses) and hands back 
@@ -186,61 +145,43 @@ extern "C" {
      * aren't owned by another data structure free their memory via 
      * peak_unbound_fifo_queue_node_clear_nodes otherwise memory leaks.
      *
+     * @attention Don't use a finalized queue again or init it before next use.
+     *
      * @attention The pointer address of the pointer remaining_nodes points to
      *            will be changed - if *remaining_nodes pointed to data in 
-     *            memory the reference is lost. In debug mode it is tested that
-     *            *remaining_nodes is equal to NULL.
+     *            memory the reference is lost.
      */
     int peak_mpmc_unbound_locked_fifo_queue_finalize(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
-                                                     struct peak_unbound_fifo_queue_node_batch_s *remaining_batch);
+                                                     struct peak_unbound_fifo_queue_node_s **remaining_nodes);
     
     
     
-    /**
-     * Sequentially iterates over the nodes and runs process_node for each.
-     * It is allowed to free node memory during iteration, other than that
-     * the node list itself can't be modified, only memory freeing and direct
-     * node modifications are possible.
-     */
-#if 0
-    int peak_unbound_fifo_queue_node_for_each(struct peak_unbound_fifo_queue_node_s *nodes,
-                                              void *context,
-                                              void (*process_node)(void* ctxt, struct peak_unbound_fifo_queue_node_s *node_ptr));
+
 
     
     /**
-     * Takes the remaining nodes handed back by finalize and frees their memory.
+     * Takes the remaining nodes handed back by finalize and frees their memory
+     * by calling dealloc with node_allocator for them.
      */
     int peak_unbound_fifo_queue_node_clear_nodes(struct peak_unbound_fifo_queue_node_s *nodes,
                                                  void *node_allocator,
-                                                 peak_node_dealloc_func dealloc);
+                                                 peak_dealloc_func node_dealloc);
+   
     
-#endif    
-    
-    /**
-     * Returns the context of the queue set via the create function or NULL
-     * on error.
-     *
-     * TODO: @todo Specifiy error case reasons.
-     */
-#if 0
-    struct peak_queue_context_s* peak_mpmc_unbound_locked_fifo_queue_context(struct peak_mpmc_unbound_locked_fifo_queue_s *queue);
-#endif
+
+
     
     /**
      * Enqueues node at the producer end of the queue and takes over ownership
      * of node.
      *
      * @attention node mustn't be NULL.
+     *
+     * @attention All nodes enqueued must be properly memory aligned to enable
+     *            atomic access.
      */
     int peak_mpmc_unbound_locked_fifo_queue_push(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
                                                  struct peak_unbound_fifo_queue_node_s *node);
-    
-    
-    
-    int peak_mpmc_unbound_locked_fifo_queue_push_batch(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
-                                                       struct peak_unbound_fifo_queue_node_batch_s *batch);
-    
     
     
     /**
@@ -254,21 +195,8 @@ extern "C" {
      */
     struct peak_unbound_fifo_queue_node_s* peak_mpmc_unbound_locked_fifo_queue_trypop(struct peak_mpmc_unbound_locked_fifo_queue_s *queue);
     
-    /**
-     * Dequeues the oldest non-consumed node if there is one and hands over
-     * ownership to the caller by assigning the node to *a_node.
-     * If a node has been dequeued successfully PEAK_SUCCESS is returned, 
-     * otherwise ETIMEDOUT is returned (while trying to pop a node no node could
-     * be found).
-     *
-     * TODO: @todo Or should it return ENODATA? Is ENODATA portable?
-     */
-#if 0
-    /* TODO: @todo Remove - 
-     */
-    int peak_mpmc_unbound_locked_fifo_queue_trypop(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
-                                                   struct peak_unbound_fifo_queue_node_s **a_node);
-#endif
+
+
     
 #if defined(__cplusplus)
 } /* extern "C" */

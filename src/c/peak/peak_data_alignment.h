@@ -92,10 +92,10 @@ extern "C" {
     /**
      * @attention byte_alignment must be a power of 2 and not 0.
      *
-     * @return PEAK_TRUE if pointer_to_check is aligned to byte_alignment,
-     *         otherwise PEAK_FALSE.
+     * @return PEAK_TRUE if memory pointer_to_check points to is aligned to 
+     *         byte_alignment or is NULL, otherwise returns PEAK_FALSE.
      */
-    int peak_is_aligned(void *pointer_to_check, size_t byte_alignment);
+    int peak_is_aligned(void const *pointer_to_check, size_t byte_alignment);
     
 
 #if defined(__cplusplus)

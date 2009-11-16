@@ -5,7 +5,7 @@ Short names that state the main ideas of peak (asynchronity, compute groups are 
 
 peak_compute_func
 peak_compute_thread
-peak_compute_engine (???)
+peak_compute_engine (compute thread running a compute func - useful name???)
 peak_compute_group
 peak_compute_cluster
 peak_fifo_queue

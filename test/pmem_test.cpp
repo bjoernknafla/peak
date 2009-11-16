@@ -19,6 +19,11 @@
 
 SUITE(pmem)
 {
+    TEST(zero_is_alogned)
+    {
+        CHECK(peak_is_aligned(NULL, PEAK_MEMORY_POINTER_ALIGNMENT));
+    }
+    
     TEST(pmem_malloc_aligned)
     {
         std::size_t const main_alloc_testruns = 100;

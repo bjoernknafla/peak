@@ -38,7 +38,7 @@ SUITE(peak_data_alignment)
     }
     
     
-    TEST(align)
+    TEST(peak_is_power_of_two)
     {
         CHECK_EQUAL(0, peak_is_power_of_two(0));
         CHECK_EQUAL(0, peak_is_power_of_two(3));

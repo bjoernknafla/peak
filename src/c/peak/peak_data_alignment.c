@@ -36,7 +36,7 @@ int peak_is_power_of_two(size_t tested_byte_alignment)
 
 
 
-int peak_is_aligned(void *pointer_to_check,
+int peak_is_aligned(void const *pointer_to_check,
                     size_t byte_alignment)
 {
     assert(0 != byte_alignment);
@@ -44,5 +44,4 @@ int peak_is_aligned(void *pointer_to_check,
     
     return (((uintptr_t)pointer_to_check) & (byte_alignment-1)) == 0;
 }
-
 

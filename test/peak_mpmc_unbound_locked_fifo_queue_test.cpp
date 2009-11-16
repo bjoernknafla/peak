@@ -12,6 +12,7 @@
 
 #include <cassert>
 #include <vector>
+#include <climits>
 
 
 #include <amp/amp_raw.h>
@@ -22,6 +23,25 @@
 
 
 namespace {
+    
+    class mutex_lock_guard {
+    public:
+        mutex_lock_guard(amp_raw_mutex_s& m)
+        :   mutex_(m)
+        {
+            int retval = amp_raw_mutex_lock(&mutex_);
+            assert(AMP_SUCCESS == retval);
+        }
+        
+        ~mutex_lock_guard()
+        {
+            int retval = amp_raw_mutex_unlock(&mutex_);
+            assert(AMP_SUCCESS == retval);
+        }
+        
+    private:
+        amp_raw_mutex_s& mutex_;
+    };
     
     
     class test_allocator_s {
@@ -62,35 +82,33 @@ namespace {
         
         void increase_alloc_count()
         {
-            int rv = amp_raw_mutex_lock(alloc_count_mutex_);
-            assert(AMP_SUCCESS == rv);
-            {
-                ++alloc_count_;
-            }
-            rv = amp_raw_mutex_unlock(alloc_count_mutex_);
-            assert(AMP_SUCCESS == rv);
+            mutex_lock_guard lock(*alloc_count_mutex_);
+            
+            assert(SIZE_MAX != alloc_count_);
+            
+            ++alloc_count_;
         }
         
         
         void increase_dealloc_count()
         {
-            int rv = amp_raw_mutex_lock(dealloc_count_mutex_);
-            assert(AMP_SUCCESS == rv);
-            {
-                ++dealloc_count_;
-            }
-            rv = amp_raw_mutex_unlock(dealloc_count_mutex_);
-            assert(AMP_SUCCESS == rv);
+            mutex_lock_guard lock(*dealloc_count_mutex_);
+            
+            assert(SIZE_MAX != dealloc_count_);
+            
+            ++dealloc_count_;
         }
         
         
-        size_t non_thread_safe_alloc_count() const
+        size_t alloc_count() const
         {
+            mutex_lock_guard lock(*alloc_count_mutex_);
             return alloc_count_;
         }
         
-        size_t non_thread_safe_dealloc_count() const
+        size_t dealloc_count() const
         {
+            mutex_lock_guard lock(*dealloc_count_mutex_);
             return dealloc_count_;
         }
         
@@ -140,39 +158,28 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
     
     TEST(sequential_create_destroy)
     {
-        
-        test_allocator_s default_allocator;
         test_allocator_s node_allocator;
         
-        
-        struct peak_queue_context_s queue_context = {
-            &default_allocator,
-            test_alloc,
-            test_dealloc,
-            &node_allocator,
-            test_alloc,
-            test_dealloc
-        };
-        
-        
-        
         struct peak_unbound_fifo_queue_node_s *queue_first_sentry_node = (struct peak_unbound_fifo_queue_node_s*)test_alloc(&node_allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
-        CHECK(NULL != queue_first_sentry_node);
+        assert(NULL != queue_first_sentry_node);
         
-        struct peak_mpmc_unbound_locked_fifo_queue_s *queue = NULL;
-        int retval = peak_mpmc_unbound_locked_fifo_queue_create(&queue, queue_first_sentry_node, &queue_context);
-        CHECK(NULL != queue);
+        struct peak_mpmc_unbound_locked_fifo_queue_s queue;
+        int retval = peak_mpmc_unbound_locked_fifo_queue_init(&queue, queue_first_sentry_node);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
         
-        
-        retval = peak_mpmc_unbound_locked_fifo_queue_destroy(queue);
+        struct peak_unbound_fifo_queue_node_s *remaining_nodes = NULL;
+        retval = peak_mpmc_unbound_locked_fifo_queue_finalize(&queue, &remaining_nodes);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
+        CHECK(NULL != remaining_nodes);
         
-        CHECK_EQUAL(1u, default_allocator.non_thread_safe_alloc_count());
-        CHECK_EQUAL(1u, default_allocator.non_thread_safe_dealloc_count());
+        retval = peak_unbound_fifo_queue_node_clear_nodes(remaining_nodes,
+                                                          &node_allocator,
+                                                          test_dealloc);
+        CHECK_EQUAL(PEAK_SUCCESS, retval);
+        remaining_nodes = NULL;
         
-        CHECK_EQUAL(1u, node_allocator.non_thread_safe_alloc_count());
-        CHECK_EQUAL(1u, node_allocator.non_thread_safe_dealloc_count());
+        CHECK_EQUAL(1u, node_allocator.alloc_count());
+        CHECK_EQUAL(1u, node_allocator.dealloc_count());
     }
     
     
@@ -182,17 +189,8 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
         class queue_test_fixture {
         public:
             queue_test_fixture()
-            :   default_allocator()
-            ,   node_allocator()
-            ,   queue_context()
+            :   node_allocator()
             {
-                queue_context.allocator_context = &default_allocator;
-                queue_context.alloc = test_alloc;
-                queue_context.dealloc = test_dealloc;
-                
-                queue_context.node_allocator_context = &node_allocator;
-                queue_context.node_alloc = test_alloc;
-                queue_context.node_dealloc = test_dealloc;
             }
             
             
@@ -200,11 +198,8 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
             {
                 
             }
-
             
-            test_allocator_s default_allocator;
             test_allocator_s node_allocator;
-            peak_queue_context_s queue_context;
             
         };
         
@@ -218,39 +213,43 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
     {
         // Create the queue
         struct peak_unbound_fifo_queue_node_s *queue_first_sentry_node = (struct peak_unbound_fifo_queue_node_s*)test_alloc(&node_allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
-        CHECK(NULL != queue_first_sentry_node);
+        assert(NULL != queue_first_sentry_node);
         
-        struct peak_mpmc_unbound_locked_fifo_queue_s *queue = NULL;
-        int retval = peak_mpmc_unbound_locked_fifo_queue_create(&queue, queue_first_sentry_node, &queue_context);
-        CHECK(NULL != queue);
+        struct peak_mpmc_unbound_locked_fifo_queue_s queue;
+        int retval = peak_mpmc_unbound_locked_fifo_queue_init(&queue, queue_first_sentry_node);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
         
         
         
         // Push two newly created nodes onto the queue.
         struct peak_unbound_fifo_queue_node_s *node0 = (struct peak_unbound_fifo_queue_node_s *)test_alloc(&node_allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
-        CHECK(NULL != node0);
+        assert(NULL != node0);
         
-        retval = peak_mpmc_unbound_locked_fifo_queue_push(queue, node0);
+        retval = peak_mpmc_unbound_locked_fifo_queue_push(&queue, node0);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
         
         struct peak_unbound_fifo_queue_node_s *node1 = (struct peak_unbound_fifo_queue_node_s *)test_alloc(&node_allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
-        CHECK(NULL != node1);
+        assert(NULL != node1);
         
-        retval = peak_mpmc_unbound_locked_fifo_queue_push(queue, node1);
+        retval = peak_mpmc_unbound_locked_fifo_queue_push(&queue, node1);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
         
         
         
         // Delete the queue without pop-ing the nodes.
-        retval = peak_mpmc_unbound_locked_fifo_queue_destroy(queue);
+        struct peak_unbound_fifo_queue_node_s *remaining_nodes = NULL;
+        retval = peak_mpmc_unbound_locked_fifo_queue_finalize(&queue, &remaining_nodes);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
+        CHECK(NULL != remaining_nodes);
         
-        CHECK_EQUAL(1u, default_allocator.non_thread_safe_alloc_count());
-        CHECK_EQUAL(1u, default_allocator.non_thread_safe_dealloc_count());
+        retval = peak_unbound_fifo_queue_node_clear_nodes(remaining_nodes,
+                                                                 &node_allocator,
+                                                                 test_dealloc);
+        CHECK_EQUAL(PEAK_SUCCESS, retval);
+        remaining_nodes = NULL;
         
-        CHECK_EQUAL(3u, node_allocator.non_thread_safe_alloc_count());
-        CHECK_EQUAL(3u, node_allocator.non_thread_safe_dealloc_count());
+        CHECK_EQUAL(3u, node_allocator.alloc_count());
+        CHECK_EQUAL(3u, node_allocator.dealloc_count());
     }
     
     
@@ -259,11 +258,10 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
     {
         // Create the queue
         struct peak_unbound_fifo_queue_node_s *queue_first_sentry_node = (struct peak_unbound_fifo_queue_node_s*)test_alloc(&node_allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
-        CHECK(NULL != queue_first_sentry_node);
+        assert(NULL != queue_first_sentry_node);
         
-        struct peak_mpmc_unbound_locked_fifo_queue_s *queue = NULL;
-        int retval = peak_mpmc_unbound_locked_fifo_queue_create(&queue, queue_first_sentry_node, &queue_context);
-        CHECK(NULL != queue);
+        struct peak_mpmc_unbound_locked_fifo_queue_s queue;
+        int retval = peak_mpmc_unbound_locked_fifo_queue_init(&queue, queue_first_sentry_node);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
         
         
@@ -278,93 +276,98 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
         // Push twice, pop once, push twice, pop three, push and pop one
         
         struct peak_unbound_fifo_queue_node_s *node = (struct peak_unbound_fifo_queue_node_s *)test_alloc(&node_allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
-        CHECK(NULL != node);
+        assert(NULL != node);
         node->data.context = &pushed_node_values[0];
         
-        retval = peak_mpmc_unbound_locked_fifo_queue_push(queue, node);
+        retval = peak_mpmc_unbound_locked_fifo_queue_push(&queue, node);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
         
         node = (struct peak_unbound_fifo_queue_node_s *)test_alloc(&node_allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
-        CHECK(NULL != node);
+        assert(NULL != node);
         node->data.context = &pushed_node_values[1];
         
-        retval = peak_mpmc_unbound_locked_fifo_queue_push(queue, node);
+        retval = peak_mpmc_unbound_locked_fifo_queue_push(&queue, node);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
         
         
         // Hereafter only node pointing to value 1 left on queue.
-        node = peak_mpmc_unbound_locked_fifo_queue_trypop(queue);
+        node = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
         CHECK(NULL != node);
         CHECK(0 == *(static_cast<std::size_t*>(node->data.context)));
         test_dealloc(&node_allocator, node);
         
         
         node = (struct peak_unbound_fifo_queue_node_s *)test_alloc(&node_allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
-        CHECK(NULL != node);
+        assert(NULL != node);
         node->data.context = &pushed_node_values[2];
         
-        retval = peak_mpmc_unbound_locked_fifo_queue_push(queue, node);
+        retval = peak_mpmc_unbound_locked_fifo_queue_push(&queue, node);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
         
         
         node = (struct peak_unbound_fifo_queue_node_s *)test_alloc(&node_allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
-        CHECK(NULL != node);
+        assert(NULL != node);
         node->data.context = &pushed_node_values[3];
         
-        retval = peak_mpmc_unbound_locked_fifo_queue_push(queue, node);
+        retval = peak_mpmc_unbound_locked_fifo_queue_push(&queue, node);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
         
         
         // Hereafter only node pointing to value 2, 3 left on queue.
-        node = peak_mpmc_unbound_locked_fifo_queue_trypop(queue);
+        node = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
         CHECK(NULL != node);
         CHECK(1 == *(static_cast<std::size_t*>(node->data.context)));
         test_dealloc(&node_allocator, node);
         
         // Hereafter only node pointing to value 3 left on queue.
-        node = peak_mpmc_unbound_locked_fifo_queue_trypop(queue);
+        node = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
         CHECK(NULL != node);
         CHECK(2 == *(static_cast<std::size_t*>(node->data.context)));
         test_dealloc(&node_allocator, node);
         
         // Hereafter no node left on queue.
-        node = peak_mpmc_unbound_locked_fifo_queue_trypop(queue);
+        node = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
         CHECK(NULL != node);
         CHECK(3 == *(static_cast<std::size_t*>(node->data.context)));
         test_dealloc(&node_allocator, node);
         
         
-        node = peak_mpmc_unbound_locked_fifo_queue_trypop(queue);
+        node = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
         CHECK(NULL == node);
         
         
         // Push one more node and pop it and that is it.
         node = (struct peak_unbound_fifo_queue_node_s *)test_alloc(&node_allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
-        CHECK(NULL != node);
+        assert(NULL != node);
         node->data.context = &pushed_node_values[4];
         
-        retval = peak_mpmc_unbound_locked_fifo_queue_push(queue, node);
+        retval = peak_mpmc_unbound_locked_fifo_queue_push(&queue, node);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
         
-        node = peak_mpmc_unbound_locked_fifo_queue_trypop(queue);
+        node = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
         CHECK(NULL != node);
         CHECK(4 == *(static_cast<std::size_t*>(node->data.context)));
         test_dealloc(&node_allocator, node);
         
         
-        node = peak_mpmc_unbound_locked_fifo_queue_trypop(queue);
+        node = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
         CHECK(NULL == node);
         
         
         // Delete the queue without pop-ing the nodes.
-        retval = peak_mpmc_unbound_locked_fifo_queue_destroy(queue);
+        struct peak_unbound_fifo_queue_node_s *remaining_nodes = NULL;
+        retval = peak_mpmc_unbound_locked_fifo_queue_finalize(&queue, &remaining_nodes);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
+        CHECK(NULL != remaining_nodes);
         
-        CHECK_EQUAL(1u, default_allocator.non_thread_safe_alloc_count());
-        CHECK_EQUAL(1u, default_allocator.non_thread_safe_dealloc_count());
+        retval = peak_unbound_fifo_queue_node_clear_nodes(remaining_nodes,
+                                                          &node_allocator,
+                                                          test_dealloc);
+        CHECK_EQUAL(PEAK_SUCCESS, retval);
+        remaining_nodes = NULL;
         
-        CHECK_EQUAL(6u, node_allocator.non_thread_safe_alloc_count());
-        CHECK_EQUAL(6u, node_allocator.non_thread_safe_dealloc_count());   
+        CHECK_EQUAL(6u, node_allocator.alloc_count());
+        CHECK_EQUAL(6u, node_allocator.dealloc_count());   
     }
     
     
@@ -432,25 +435,17 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
             
             void increase_push_count()
             {
-                int retval = amp_raw_mutex_lock(push_count_mutex_);
-                assert(AMP_SUCCESS == retval);
-                {
-                    ++push_count_;
-                }
-                retval = amp_raw_mutex_unlock(push_count_mutex_);
-                assert(AMP_SUCCESS == retval);
+                mutex_lock_guard lock(*push_count_mutex_);
+                assert(SIZE_MAX != push_count_);
+                ++push_count_;
             }
             
             
             void increase_pop_count()
             {
-                int retval = amp_raw_mutex_lock(pop_count_mutex_);
-                assert(AMP_SUCCESS == retval);
-                {
-                    ++pop_count_;
-                }
-                retval = amp_raw_mutex_unlock(pop_count_mutex_);
-                assert(AMP_SUCCESS == retval);
+                mutex_lock_guard lock(*pop_count_mutex_);
+                assert(SIZE_MAX != pop_count_);
+                ++pop_count_;
             }
             
             
@@ -465,14 +460,16 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
                 return id_;
             }
             
-            std::size_t non_thread_safe_push_count() const
+            std::size_t push_count() const
             {
+                mutex_lock_guard lock(*push_count_mutex_);
                 return push_count_;
             }
             
             
-            std::size_t non_thread_safe_pop_count() const
+            std::size_t pop_count() const
             {
+                mutex_lock_guard lock(*pop_count_mutex_);
                 return pop_count_;
             }
             
@@ -571,14 +568,13 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
     
     TEST_FIXTURE(queue_test_fixture, parallel_push_trypop)
     {
-        // Create first sentry node for queue
-        struct peak_unbound_fifo_queue_node_s *queue_first_sentry_node = (struct peak_unbound_fifo_queue_node_s*)test_alloc(&node_allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
-        CHECK(NULL != queue_first_sentry_node);
+        // First sentry put on stack as the test threads don't manage memory.
+        // All other nodes that will be used are managed by this test.
+        struct peak_unbound_fifo_queue_node_s queue_first_sentry_node;
         
         // Create the queue
-        struct peak_mpmc_unbound_locked_fifo_queue_s *queue = NULL;
-        int retval = peak_mpmc_unbound_locked_fifo_queue_create(&queue, queue_first_sentry_node, &queue_context);
-        CHECK(NULL != queue);
+        struct peak_mpmc_unbound_locked_fifo_queue_s queue;
+        int retval = peak_mpmc_unbound_locked_fifo_queue_init(&queue, &queue_first_sentry_node);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
         
         // Create node data to push and trypop
@@ -601,6 +597,7 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
         std::vector<data_s*> data_vector(node_count);
         for (std::size_t i = 0; i < node_count; ++i) {
             data_s *data = new data_s(i);
+            assert(NULL != data);
             data_vector[i] = data;
         }
         
@@ -610,8 +607,8 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
         for (std::size_t i = 0; i < node_count; ++i) {
             
             
-            nodes[i] = static_cast<peak_unbound_fifo_queue_node_s*>(queue_context.node_alloc(&node_allocator, sizeof(peak_unbound_fifo_queue_node_s)));
-            
+            nodes[i] = static_cast<peak_unbound_fifo_queue_node_s*>(test_alloc(&node_allocator, sizeof(peak_unbound_fifo_queue_node_s)));
+            assert(NULL != nodes[i]);
             nodes[i]->data.context = data_vector[i];
         }
         
@@ -627,7 +624,7 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
             // No setting of thread->thread - threads are launched after 
             // this loop.
             
-            thread->queue = queue;
+            thread->queue = &queue;
             
             int rv = amp_raw_semaphore_init(&thread->finished_sema, 0);
             assert(AMP_SUCCESS == rv);
@@ -643,12 +640,12 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
             threads[i] = thread;
         }
         
-        // Now launch the threadsbut one - let the main thread be that last thread!
+        // Now launch the threads but one - let the main thread be that last thread!
         for (std::size_t i = 0; i < thread_count - 1; ++i) {
             thread_s *thread = threads[i];
             int rv = amp_raw_thread_launch(&thread->thread, 
-                                               thread, 
-                                               queue_push_trypop_compute_func);
+                                           thread, 
+                                           queue_push_trypop_compute_func);
             assert(AMP_SUCCESS == rv);
         }
         
@@ -668,7 +665,7 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
         for (std::size_t i = 0; i < full_unpopped_count; ++i) {
             peak_unbound_fifo_queue_node_s *node = NULL;
             while (NULL == node) {
-                node = peak_mpmc_unbound_locked_fifo_queue_trypop(queue);
+                node = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
             }
             (static_cast<data_s*>(node->data.context))->increase_pop_count();
         }
@@ -680,10 +677,6 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
             thread_s *thread = threads[i];
             int rv = amp_raw_thread_join(&thread->thread);
             assert(AMP_SUCCESS == rv);
-            
-            
-            
-            
         }
         
         // Check that all nodes data has been pushed and poped exactly once 
@@ -693,8 +686,8 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
             data_s *data = data_vector[i];
             
             CHECK_EQUAL(i, data->non_thread_safe_id());
-            CHECK_EQUAL(1u, data->non_thread_safe_push_count());
-            CHECK_EQUAL(1u, data->non_thread_safe_pop_count());
+            CHECK_EQUAL(1u, data->push_count());
+            CHECK_EQUAL(1u, data->pop_count());
         }
         
         
@@ -709,9 +702,24 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
         }
         
        
+
+        
+        
+        
+        
+        // Delete the queue without pop-ing the nodes.
+        struct peak_unbound_fifo_queue_node_s *remaining_nodes = NULL;
+        retval = peak_mpmc_unbound_locked_fifo_queue_finalize(&queue, &remaining_nodes);
+        CHECK_EQUAL(PEAK_SUCCESS, retval);
+        CHECK(NULL != remaining_nodes);
+        
+        // No nead to clear the nodes as they will be handled in the next loop 
+        // and the first sentry node's memory is on the stack and not on the 
+        // heap.
+        
         // Free the memory of all nodes.
         for (std::size_t i = 0; i < node_count; ++i) {
-            queue_context.node_dealloc(&node_allocator, nodes[i]);
+            test_dealloc(&node_allocator, nodes[i]);
         }
         
         
@@ -720,18 +728,8 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
             delete data_vector[i];
         }
         
-        
-        
-        
-        // Delete the queue without pop-ing the nodes.
-        retval = peak_mpmc_unbound_locked_fifo_queue_destroy(queue);
-        CHECK_EQUAL(PEAK_SUCCESS, retval);
-        
-        CHECK_EQUAL(1u, default_allocator.non_thread_safe_alloc_count());
-        CHECK_EQUAL(1u, default_allocator.non_thread_safe_dealloc_count());
-        
-        CHECK_EQUAL(node_count + 1u, node_allocator.non_thread_safe_alloc_count());
-        CHECK_EQUAL(node_count + 1u, node_allocator.non_thread_safe_dealloc_count());
+        CHECK_EQUAL(node_count, node_allocator.alloc_count());
+        CHECK_EQUAL(node_count, node_allocator.dealloc_count());
     }
     
     
