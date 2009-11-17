@@ -15,6 +15,8 @@
  *
  * TODO: @todo Decide how to handle alignment when allocating/freeing with
  *             allocator contexts correctly.
+ *
+ * TODO: @todo Write unit tests for aligned allocation and deallocation.
  */
 
 #ifndef PEAK_peak_memory_H
@@ -75,18 +77,41 @@ extern "C" {
     
     /**
      * Wrapper around std malloc that ignores allocator_context.
+     * Call peak_free to deallocate the memory allocated via peak_malloc.
      */
     void* peak_malloc(void *allocator_context, size_t size_in_bytes);
     
     /**
      * Wrapper around std free that ignores allocator_context.
+     * Deallocates the memory allocated via peak_malloc (and only memory 
+     * allocated by it). 
      *
-     * TODO: @todo Add restrit keyword.
+     * TODO: @todo Add restrict keyword.
      */
     void peak_free(void *allocator_context, void *pointer);
     
     
 
+    /**
+     * Wrapper around pmem_malloc_aligned, the allocator context is ignored.
+     * Call peak_free_aligned to deallocate the memory allocated via
+     * peak_malloc_aligned.
+     * alignment must be a power of two and not zero. See 
+     * PEAK_ATOMIC_ACCESS_ALIGNMENT.
+     */
+    void* peak_malloc_aligned(void *allocator_context, 
+                             size_t size_in_bytes, 
+                             size_t alignment);
+    
+    /**
+     * Wrapper around pmem_free_aligned, the allocator context is ignored.
+     * Deallocates the memory allocated by peak_malloc_aligned (and only memory 
+     * allocated by it). 
+     *
+     * TODO: @todo Add restrict keyword.
+     */
+    void peak_free_aligned(void *allocator_context,
+                           void *pointer);
     
     
 #if defined(__cplusplus)

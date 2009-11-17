@@ -17,6 +17,8 @@
 
 #include <stdlib.h>
 
+#include "pmem.h"
+
 
 
 void* peak_malloc(void *allocator_context, size_t size_in_bytes)
@@ -33,6 +35,27 @@ void peak_free(void *allocator_context, void *pointer)
     (void)allocator_context;
     
     free(pointer);
+}
+
+
+
+void* peak_malloc_aligned(void *allocator_context, 
+                         size_t size_in_bytes, 
+                         size_t alignment)
+{
+    (void)allocator_context;
+    
+    return pmem_malloc_aligned(size_in_bytes, alignment);
+}
+
+
+
+void peak_free_aligned(void *allocator_context,
+                       void *pointer)
+{
+    (void)allocator_context;
+    
+    pmem_free_aligned(pointer);
 }
 
 
