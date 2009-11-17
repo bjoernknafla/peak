@@ -277,14 +277,14 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
         
         struct peak_unbound_fifo_queue_node_s *node = (struct peak_unbound_fifo_queue_node_s *)test_alloc(&node_allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
         assert(NULL != node);
-        node->data.context = &pushed_node_values[0];
+        node->data.job_data = &pushed_node_values[0];
         
         retval = peak_mpmc_unbound_locked_fifo_queue_push(&queue, node);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
         
         node = (struct peak_unbound_fifo_queue_node_s *)test_alloc(&node_allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
         assert(NULL != node);
-        node->data.context = &pushed_node_values[1];
+        node->data.job_data = &pushed_node_values[1];
         
         retval = peak_mpmc_unbound_locked_fifo_queue_push(&queue, node);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
@@ -293,13 +293,13 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
         // Hereafter only node pointing to value 1 left on queue.
         node = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
         CHECK(NULL != node);
-        CHECK(0 == *(static_cast<std::size_t*>(node->data.context)));
+        CHECK(0 == *(static_cast<std::size_t*>(node->data.job_data)));
         test_dealloc(&node_allocator, node);
         
         
         node = (struct peak_unbound_fifo_queue_node_s *)test_alloc(&node_allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
         assert(NULL != node);
-        node->data.context = &pushed_node_values[2];
+        node->data.job_data = &pushed_node_values[2];
         
         retval = peak_mpmc_unbound_locked_fifo_queue_push(&queue, node);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
@@ -307,7 +307,7 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
         
         node = (struct peak_unbound_fifo_queue_node_s *)test_alloc(&node_allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
         assert(NULL != node);
-        node->data.context = &pushed_node_values[3];
+        node->data.job_data = &pushed_node_values[3];
         
         retval = peak_mpmc_unbound_locked_fifo_queue_push(&queue, node);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
@@ -316,19 +316,19 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
         // Hereafter only node pointing to value 2, 3 left on queue.
         node = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
         CHECK(NULL != node);
-        CHECK(1 == *(static_cast<std::size_t*>(node->data.context)));
+        CHECK(1 == *(static_cast<std::size_t*>(node->data.job_data)));
         test_dealloc(&node_allocator, node);
         
         // Hereafter only node pointing to value 3 left on queue.
         node = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
         CHECK(NULL != node);
-        CHECK(2 == *(static_cast<std::size_t*>(node->data.context)));
+        CHECK(2 == *(static_cast<std::size_t*>(node->data.job_data)));
         test_dealloc(&node_allocator, node);
         
         // Hereafter no node left on queue.
         node = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
         CHECK(NULL != node);
-        CHECK(3 == *(static_cast<std::size_t*>(node->data.context)));
+        CHECK(3 == *(static_cast<std::size_t*>(node->data.job_data)));
         test_dealloc(&node_allocator, node);
         
         
@@ -339,14 +339,14 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
         // Push one more node and pop it and that is it.
         node = (struct peak_unbound_fifo_queue_node_s *)test_alloc(&node_allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
         assert(NULL != node);
-        node->data.context = &pushed_node_values[4];
+        node->data.job_data = &pushed_node_values[4];
         
         retval = peak_mpmc_unbound_locked_fifo_queue_push(&queue, node);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
         
         node = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
         CHECK(NULL != node);
-        CHECK(4 == *(static_cast<std::size_t*>(node->data.context)));
+        CHECK(4 == *(static_cast<std::size_t*>(node->data.job_data)));
         test_dealloc(&node_allocator, node);
         
         
@@ -519,7 +519,7 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
             for (std::size_t i = 0; i < context->first_push_count; ++i) {
                 // Select node to push onto the queue
                 peak_unbound_fifo_queue_node_s *node = context->nodes[context->first_push_start_index + i];
-                (static_cast<data_s*>(node->data.context))->increase_push_count();
+                (static_cast<data_s*>(node->data.job_data))->increase_push_count();
                 int retval = peak_mpmc_unbound_locked_fifo_queue_push(context->queue, node);
                 assert(PEAK_SUCCESS == retval);
                 
@@ -532,7 +532,7 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
                 while (NULL == node) {
                     node = peak_mpmc_unbound_locked_fifo_queue_trypop(context->queue);
                 }
-                (static_cast<data_s*>(node->data.context))->increase_pop_count();
+                (static_cast<data_s*>(node->data.job_data))->increase_pop_count();
             }
             
             
@@ -540,7 +540,7 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
             for (std::size_t i = 0; i < context->second_push_count; ++i) {
                 // Select node to push onto the queue
                 peak_unbound_fifo_queue_node_s *node = context->nodes[context->second_push_start_index + i];
-                (static_cast<data_s*>(node->data.context))->increase_push_count();
+                (static_cast<data_s*>(node->data.job_data))->increase_push_count();
                 int retval = peak_mpmc_unbound_locked_fifo_queue_push(context->queue, node);
                 assert(PEAK_SUCCESS == retval);
                 
@@ -553,7 +553,7 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
                 while (NULL == node) {
                     node = peak_mpmc_unbound_locked_fifo_queue_trypop(context->queue);
                 }
-                (static_cast<data_s*>(node->data.context))->increase_pop_count();
+                (static_cast<data_s*>(node->data.job_data))->increase_pop_count();
             }
             
             // Signal that compute function has finished
@@ -609,7 +609,7 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
             
             nodes[i] = static_cast<peak_unbound_fifo_queue_node_s*>(test_alloc(&node_allocator, sizeof(peak_unbound_fifo_queue_node_s)));
             assert(NULL != nodes[i]);
-            nodes[i]->data.context = data_vector[i];
+            nodes[i]->data.job_data = data_vector[i];
         }
         
         
@@ -667,7 +667,7 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
             while (NULL == node) {
                 node = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
             }
-            (static_cast<data_s*>(node->data.context))->increase_pop_count();
+            (static_cast<data_s*>(node->data.job_data))->increase_pop_count();
         }
         
         

@@ -10,6 +10,7 @@
 		321E22B9108CA41F0080BFE6 /* libUnitTest++.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 321E22B8108CA41F0080BFE6 /* libUnitTest++.a */; };
 		321E22C9108CA4BE0080BFE6 /* unit_tests_main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 321E22A5108CA2A40080BFE6 /* unit_tests_main.cpp */; };
 		321E4387108DBD160080BFE6 /* peak_data_alignment_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 321E4386108DBD160080BFE6 /* peak_data_alignment_test.cpp */; };
+		3224E8E610B2D5D10051F7D0 /* peak_compute_funcs_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3224E8E510B2D5D10051F7D0 /* peak_compute_funcs_test.cpp */; };
 		326776CA10A18E6400CC7576 /* libamp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 326776C510A18E3D00CC7576 /* libamp.a */; };
 		326776E210A19A8900CC7576 /* pmem_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 326776E110A19A8900CC7576 /* pmem_test.cpp */; };
 		326776E610A19B5400CC7576 /* peak_stdint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 326776E510A19B5400CC7576 /* peak_stdint.cpp */; };
@@ -65,6 +66,7 @@
 		321E22B8108CA41F0080BFE6 /* libUnitTest++.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libUnitTest++.a"; path = "../../../../ForeignProjects/unittest-cpp/UnitTest++/libUnitTest++.a"; sourceTree = SOURCE_ROOT; };
 		321E4386108DBD160080BFE6 /* peak_data_alignment_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_data_alignment_test.cpp; sourceTree = "<group>"; };
 		321E440A108F49570080BFE6 /* error_and_exception_handling.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = error_and_exception_handling.txt; sourceTree = "<group>"; };
+		3224E8E510B2D5D10051F7D0 /* peak_compute_funcs_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_compute_funcs_test.cpp; sourceTree = "<group>"; };
 		326776E110A19A8900CC7576 /* pmem_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = pmem_test.cpp; sourceTree = "<group>"; };
 		326776E510A19B5400CC7576 /* peak_stdint.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_stdint.cpp; sourceTree = "<group>"; };
 		326776E910A19CD800CC7576 /* peak_mpmc_unbound_locked_fifo_queue_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_mpmc_unbound_locked_fifo_queue_test.cpp; sourceTree = "<group>"; };
@@ -217,6 +219,7 @@
 				326776E110A19A8900CC7576 /* pmem_test.cpp */,
 				326776E510A19B5400CC7576 /* peak_stdint.cpp */,
 				326776E910A19CD800CC7576 /* peak_mpmc_unbound_locked_fifo_queue_test.cpp */,
+				3224E8E510B2D5D10051F7D0 /* peak_compute_funcs_test.cpp */,
 			);
 			name = test;
 			path = ../../../test;
@@ -361,6 +364,7 @@
 				326776E210A19A8900CC7576 /* pmem_test.cpp in Sources */,
 				326776E610A19B5400CC7576 /* peak_stdint.cpp in Sources */,
 				326776EA10A19CD800CC7576 /* peak_mpmc_unbound_locked_fifo_queue_test.cpp in Sources */,
+				3224E8E610B2D5D10051F7D0 /* peak_compute_funcs_test.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -21,16 +21,30 @@
 #include "peak_data_alignment.h"
 
 
+static int peak_unbound_fifo_queue_node_clear(struct peak_unbound_fifo_queue_node_s *node);
+static int peak_unbound_fifo_queue_node_clear(struct peak_unbound_fifo_queue_node_s *node)
+{
+    assert(NULL != node);
+    
+    node->next = NULL;
+    
+    node->data.job_func = NULL;
+    node->data.job_data = NULL;
+    
+    return PEAK_SUCCESS;
+}
+
+
 
 int peak_mpmc_unbound_locked_fifo_queue_init(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
                                              struct peak_unbound_fifo_queue_node_s *sentry_node)
 {
     assert(NULL != queue);
     assert(NULL != sentry_node);
-    assert(peak_is_aligned(&(queue->last_produced), PEAK_MEMORY_POINTER_ALIGNMENT));
-    assert(peak_is_aligned(&(queue->last_consumed), PEAK_MEMORY_POINTER_ALIGNMENT));
-    assert(peak_is_aligned(sentry_node, PEAK_MEMORY_POINTER_ALIGNMENT));
-    assert(peak_is_aligned(&(sentry_node->next), PEAK_MEMORY_POINTER_ALIGNMENT));
+    assert(peak_is_aligned(&(queue->last_produced), PEAK_ATOMIC_ACCESS_ALIGNMENT));
+    assert(peak_is_aligned(&(queue->last_consumed), PEAK_ATOMIC_ACCESS_ALIGNMENT));
+    assert(peak_is_aligned(sentry_node, PEAK_ATOMIC_ACCESS_ALIGNMENT));
+    assert(peak_is_aligned(&(sentry_node->next), PEAK_ATOMIC_ACCESS_ALIGNMENT));
     
     if (NULL == queue) {
         return EINVAL;
@@ -61,12 +75,10 @@ int peak_mpmc_unbound_locked_fifo_queue_init(struct peak_mpmc_unbound_locked_fif
         return retval;
     }
     
-    sentry_node->next = NULL;
     
-    /* TODO: @todo When extending the node data add further initialization here.
-     */
-    sentry_node->data.context = NULL;
     
+    retval = peak_unbound_fifo_queue_node_clear(sentry_node);
+    assert(PEAK_SUCCESS == retval);
     
     queue->last_produced = sentry_node;
     queue->last_consumed = sentry_node;
@@ -160,10 +172,10 @@ int peak_mpmc_unbound_locked_fifo_queue_push(struct peak_mpmc_unbound_locked_fif
 {
     assert(NULL != queue);
     assert(NULL != new_node);
-    assert(peak_is_aligned((queue->last_produced), PEAK_MEMORY_POINTER_ALIGNMENT));
-    assert(peak_is_aligned((queue->last_produced->next), PEAK_MEMORY_POINTER_ALIGNMENT));
-    assert(peak_is_aligned(new_node, PEAK_MEMORY_POINTER_ALIGNMENT));
-    assert(peak_is_aligned(&(new_node->next), PEAK_MEMORY_POINTER_ALIGNMENT));
+    assert(peak_is_aligned((queue->last_produced), PEAK_ATOMIC_ACCESS_ALIGNMENT));
+    assert(peak_is_aligned((queue->last_produced->next), PEAK_ATOMIC_ACCESS_ALIGNMENT));
+    assert(peak_is_aligned(new_node, PEAK_ATOMIC_ACCESS_ALIGNMENT));
+    assert(peak_is_aligned(&(new_node->next), PEAK_ATOMIC_ACCESS_ALIGNMENT));
     
     new_node->next = NULL;
     
@@ -213,7 +225,7 @@ int peak_mpmc_unbound_locked_fifo_queue_push(struct peak_mpmc_unbound_locked_fif
 struct peak_unbound_fifo_queue_node_s* peak_mpmc_unbound_locked_fifo_queue_trypop(struct peak_mpmc_unbound_locked_fifo_queue_s *queue)
 {
     assert(NULL != queue);
-    assert(peak_is_aligned(&(queue->last_consumed->next), PEAK_MEMORY_POINTER_ALIGNMENT));
+    assert(peak_is_aligned(&(queue->last_consumed->next), PEAK_ATOMIC_ACCESS_ALIGNMENT));
     
     struct peak_unbound_fifo_queue_node_s *consume = NULL;
     
@@ -271,7 +283,7 @@ struct peak_unbound_fifo_queue_node_s* peak_mpmc_unbound_locked_fifo_queue_trypo
             
             /* TODO: @toto Set new_last->data to 0, NULL, or whatever.
              */
-            new_last->data.context = NULL;
+            new_last->data.job_data = NULL;
         }
     }
     retval = amp_raw_mutex_unlock(&queue->consumer_mutex);

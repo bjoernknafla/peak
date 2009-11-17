@@ -36,8 +36,6 @@
  * The alignment of a struct has to be a multiple of the least common multiple
  * of the alignment of its member fields.
  *
- * TODO: @todo Change the PEAK_MEMORY_POINTER_ALIGNMENT into 
- *             PEAK_ATOMIC_ACCESS_ALIGNMENT.
  */
 
 #ifndef PEAK_peak_data_alignment_H
@@ -53,11 +51,11 @@ extern "C" {
 
 
 #if defined(PEAK_USE_FOUR_BYTE_MEMORY_POINTER_ALIGNMENT) /* Typical on x86_32 */
-#   define PEAK_MEMORY_POINTER_ALIGNMENT 0x4
+#   define PEAK_ATOMIC_ACCESS_ALIGNMENT 0x4
 #elif defined(PEAK_USE_EIGHT_BYTE_MEMORY_POINTER_ALIGNMENT)
-#   define PEAK_MEMORY_POINTER_ALIGNMENT 0x8
+#   define PEAK_ATOMIC_ACCESS_ALIGNMENT 0x8
 #elif defined(PEAK_USE_SIXTEEN_BYTE_MEMORY_POINTER_ALIGNMENT) /* Typical on x86_64 */
-#   define PEAK_MEMORY_POINTER_ALIGNMENT 0x10
+#   define PEAK_ATOMIC_ACCESS_ALIGNMENT 0x10
 #else
 #   error Unsupported memory pointer alignment.
 #endif

@@ -68,6 +68,8 @@
 extern "C" {
 #endif
 
+    typedef void (*peak_job_func)(void* job_data);
+    
     
     /**
      * Must be copy asignable.
@@ -76,7 +78,8 @@ extern "C" {
      */
     struct peak_queue_node_data_s {
         
-        void *context;
+        peak_job_func job_func;
+        void *job_data;
     };
     
     struct peak_unbound_fifo_queue_node_s {

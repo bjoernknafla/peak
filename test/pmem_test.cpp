@@ -21,7 +21,7 @@ SUITE(pmem)
 {
     TEST(zero_is_alogned)
     {
-        CHECK(peak_is_aligned(NULL, PEAK_MEMORY_POINTER_ALIGNMENT));
+        CHECK(peak_is_aligned(NULL, PEAK_ATOMIC_ACCESS_ALIGNMENT));
     }
     
     TEST(pmem_malloc_aligned)
