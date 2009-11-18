@@ -27,6 +27,8 @@
 namespace {
     
     
+#define PEAK_COMPUTE_ENGINE_CYCLES_TILL_RUN_CHECK_DEFAULT 16
+    
     typedef void (*peak_compute_func)(void *ctxt);
     
     
@@ -62,8 +64,8 @@ namespace {
         struct amp_raw_mutex_s run_mutex;
         int run;
         
-        struct amp_raw_thread_s thread;
         struct peak_compute_group_context_s *group_context;
+        struct amp_raw_thread_s thread;
     };
     
     /**
@@ -102,9 +104,12 @@ namespace {
         
         struct peak_compute_group_context_s *group_context;
         
-        peak_compute_func compute_func;
+        /* peak_compute_func compute_func; */
     };
     
+    
+    
+    void simple_compute_jobs(void *ctxt);
     
     /*
      * @attention Doesn't take over ownership of context but context must be
@@ -112,7 +117,124 @@ namespace {
      */
     int peak_compute_group_create(struct peak_compute_group_s **group,
                                   size_t number_of_threads,
-                                  struct peak_compute_group_context_s *group_context);
+                                  struct peak_compute_group_context_s *group_context)
+    {
+        assert(NULL != group);
+        assert(0 < number_of_threads);
+        assert(NULL != group_context);
+        
+        if (NULL == group || 0 == number_of_threads || NULL == group_context) {
+            return EINVAL;
+        }
+        
+        struct peak_compute_group_s *new_group = 
+            (struct peak_compute_group_s *)group_context->default_alloc_aligned(group_context->default_allocator_context, 
+                                                                                sizeof(struct peak_compute_group_s), 
+                                                                                PEAK_ATOMIC_ACCESS_ALIGNMENT);
+        assert(NULL != new_group);
+        if (NULL == new_group) {
+            return ENOMEM;
+        }
+        
+        
+        struct peak_unbound_fifo_queue_node_s *sentry_node = 
+            (struct peak_unbound_fifo_queue_node_s *)group_context->node_alloc_aligned(group_context->node_allocator_context, 
+                                                                                       sizeof(struct peak_unbound_fifo_queue_node_s), 
+                                                                                       PEAK_ATOMIC_ACCESS_ALIGNMENT);
+        assert(NULL != sentry_node);
+        if (NULL == sentry_node) {
+            group_context->default_dealloc_aligned(group_context->default_allocator_context, 
+                                                   new_group);
+            
+            return ENOMEM;
+        }
+        
+        retval = peak_mpmc_unbound_locked_fifo_queue_init(&new_group->queue, sentry_node);
+        assert(PEAK_SUCCESS == retval);
+        if (PEAK_SUCCESS != retval) {
+            
+            group_context->node_dealloc_aligned(group_context->node_allocator_context, 
+                                                sentry_node);
+            
+            group_context->default_dealloc_aligned(group_context->default_allocator_context, 
+                                                   new_group);
+            
+            return retval;
+        }
+        
+        new_group->number_of_engines = number_of_threads;
+        new_group->engines = 
+            (struct peak_compute_engine_s *)group_context->default_alloc_aligned(group_context->default_allocator_context, 
+                                                                                 sizeof(struct peak_compute_engine_s) * new_group->number_of_engines, 
+                                                                                 PEAK_ATOMIC_ACCESS_ALIGNMENT);
+        assert(NULL != new_group->engines);
+        if (NULL == new_group->engines) {
+            
+            int rv = peak_mpmc_unbound_locked_fifo_queue_finalize(&new_group->queue, &sentry_node);
+            assert(PEAK_SUCCESS == rv);
+            
+            rv = peak_unbound_fifo_queue_node_clear_nodes(sentry_node,
+                                                          group_context->node_allocator_context,
+                                                          group_context->node_dealloc_aligned);
+            assert(PEAK_SUCCESS == rv);
+            
+            
+            group_context->default_dealloc_aligned(group_context->default_allocator_context, 
+                                                   new_group);
+            
+            return ENOMEM;
+        }
+        
+        
+        for (size_t i = 0; i < new_group->number_of_engines; ++i) {
+            
+            struct peak_compute_engine_s *engine = new_group->engines[i];
+            
+            engine->queue = &new_group->queue;
+            engine->cycles_till_run_check = PEAK_COMPUTE_ENGINE_CYCLES_TILL_RUN_CHECK_DEFAULT;
+            engine->default_alloc_aligned = group_context->default_alloc_aligned;
+            engine->default_dealloc_aligned = group_context->default_dealloc_aligned;
+            engine->default_allocator_context = group_context->default_allocator_context;
+            engine->node_alloc_aligned = group_context->node_alloc_aligned;
+            engine->node_dealloc_aligned = group_context->node_dealloc_aligned;
+            engine->node_allocator_context = group_context->node_allocator_context;
+            
+            int rv = amp_raw_mutex_init(&engine->run_mutex);
+            assert(AMP_SUCCESS == rv);
+            if (AMP_SUCCESS != rv) {
+                /* Let the pain begin... */
+                
+                // Set exit on the already running engines before joining with them...
+                
+#error Implement
+                
+                return rv;
+            }
+            
+            engine->run = 1;
+            engine->group_context = new_group->group_context;
+            
+            rv = amp_raw_thread_launch(&engine->thread,
+                                       engine,
+                                       simple_compute_jobs);
+            assert(AMP_SUCCESS == rv);
+            if (AMP_SUCCESS != rv) {
+                /* More pain... */
+                
+                // Set exit on the already running engines before joining with them...
+#error Implement           
+                
+                return rv;
+            }
+        }
+        
+        
+        new_group->group_context = group_context;
+        
+        *group = new_group;
+        
+        return PEAK_SUCCESS;
+    }
     
     /* Stops all group threads while there might be unhandled jobs and 
      * deallocates the jobs and the groups memory.
@@ -162,12 +284,50 @@ namespace {
     /**
      * Blocks until the groups queue signals that it is empty.
      *
-     * @attention A queue that signels that it is empty might contain new nodes
+     * Jobs that enqueue sub-jobs that enqueue futher sub-jobs can lead to 
+     * an endless cycle and the draining function won't terminate.
+     *
+     * @attention A queue that signals that it is empty might contain new nodes
      *            that aren't accounted yet because of concurrency effects.
      *            These effects will happen if jobs enter sub-jobs from one of
      *            the compute threads.
      */
-    int peak_compute_group_drain_sync(struct peak_compute_group_s *group);
+    int peak_compute_group_drain_sync(struct peak_compute_group_s *group)
+    {
+        assert(NULL != group);
+        
+        PEAK_BOOL queue_is_empty = PEAK_FALSE;
+        int retval = peak_mpmc_unbound_locked_fifo_queue_is_empty(group->queue, &queue_is_empty);
+        assert(PEAK_SUCCESS == retval);
+        
+        peak_dealloc_aligned_func node_dealloc_aligned_func = group->group_context->node_dealloc_aligned;
+        void *node_allocator_context = group->group_context->node_allocator_context;
+        
+        while (PEAK_FALSE == queue_is_empty) {
+            
+            struct peak_unbound_fifo_queue_node_s *node = peak_mpmc_unbound_locked_fifo_queue_trypop(&group->queue);
+            
+            /* TODO: @todo Think about moving the job-call into its own
+             *             function?
+             */
+            if (NULL != node) {
+                
+                struct peak_queue_node_data_s *data = &node->data;
+                /* TODO: @todo Add compute/cluster/task/data parallel context, 
+                 * etc.
+                 */
+                data->job_func(data->job_data /*,context->job_execution_context */);
+                
+                node_dealloc_aligned_func(node_allocator_context, node); 
+            }
+            
+            retval = peak_mpmc_unbound_locked_fifo_queue_is_empty(group->queue, &queue_is_empty);
+            assert(PEAK_SUCCESS == retval);
+        }
+        
+
+        return PEAK_SUCCESS;
+    }
     
 
     

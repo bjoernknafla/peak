@@ -167,6 +167,40 @@ int peak_unbound_fifo_queue_node_clear_nodes(struct peak_unbound_fifo_queue_node
 
 
 
+int peak_mpmc_unbound_locked_fifo_queue_is_empty(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
+                                                 PEAK_BOOL *is_empty)
+{
+    assert(NULL != queue);
+    assert(NULL != is_empty);
+    
+    if (NULL == queue || NULL == is_empty) {
+        return EINVAL;
+    }
+    
+    int retval = amp_raw_mutex_lock(&queue->consumer_mutex);
+    assert(AMP_SUCCESS == retval);
+    {
+        
+        retval = amp_raw_mutex_lock(&queue->next_mutex);
+        assert(AMP_SUCCESS == retval);
+        {
+            if (NULL != queue->last_consumed->next) {
+                *is_empty = PEAK_FALSE;
+            } else {
+                *is_empty = PEAK_TRUE;
+            }
+        }
+        retval = amp_raw_mutex_unlock(&queue->next_mutex);
+        assert(AMP_SUCCESS == retval);
+    }
+    retval = amp_raw_mutex_unlock(&queue->consumer_mutex);
+    assert(AMP_SUCCESS == retval);
+    
+    return PEAK_SUCCESS;
+}
+
+
+
 int peak_mpmc_unbound_locked_fifo_queue_push(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
                                              struct peak_unbound_fifo_queue_node_s *new_node)
 {

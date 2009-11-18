@@ -167,6 +167,7 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
         int retval = peak_mpmc_unbound_locked_fifo_queue_init(&queue, queue_first_sentry_node);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
         
+        
         struct peak_unbound_fifo_queue_node_s *remaining_nodes = NULL;
         retval = peak_mpmc_unbound_locked_fifo_queue_finalize(&queue, &remaining_nodes);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
@@ -219,8 +220,6 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
         int retval = peak_mpmc_unbound_locked_fifo_queue_init(&queue, queue_first_sentry_node);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
         
-        
-        
         // Push two newly created nodes onto the queue.
         struct peak_unbound_fifo_queue_node_s *node0 = (struct peak_unbound_fifo_queue_node_s *)test_alloc(&node_allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
         assert(NULL != node0);
@@ -233,8 +232,7 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
         
         retval = peak_mpmc_unbound_locked_fifo_queue_push(&queue, node1);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
-        
-        
+
         
         // Delete the queue without pop-ing the nodes.
         struct peak_unbound_fifo_queue_node_s *remaining_nodes = NULL;
@@ -263,7 +261,6 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
         struct peak_mpmc_unbound_locked_fifo_queue_s queue;
         int retval = peak_mpmc_unbound_locked_fifo_queue_init(&queue, queue_first_sentry_node);
         CHECK_EQUAL(PEAK_SUCCESS, retval);
-        
         
         // Create node values to push and trypop
         std::size_t const pushed_node_count = 5;
@@ -371,6 +368,85 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
     }
     
     
+    
+    TEST(is_empty)
+    {
+        // All nodes live on the stack.
+        std::size_t const node_count = 4; // 1 first sentry nodes and 3 data nodes.
+        std::vector<struct peak_unbound_fifo_queue_node_s> nodes(node_count);
+        
+        struct peak_mpmc_unbound_locked_fifo_queue_s queue;
+        int retval = peak_mpmc_unbound_locked_fifo_queue_init(&queue, &nodes[0]);
+        assert(PEAK_SUCCESS == retval);
+        
+        
+        PEAK_BOOL is_empty = FALSE;
+        retval = peak_mpmc_unbound_locked_fifo_queue_is_empty(&queue, &is_empty);
+        CHECK_EQUAL(PEAK_SUCCESS, retval);
+        CHECK_EQUAL(PEAK_TRUE, is_empty);
+        
+        retval = peak_mpmc_unbound_locked_fifo_queue_push(&queue, &nodes[1]);
+        assert(PEAK_SUCCESS == retval);
+        
+        
+        is_empty = TRUE;
+        retval = peak_mpmc_unbound_locked_fifo_queue_is_empty(&queue, &is_empty);
+        CHECK_EQUAL(PEAK_SUCCESS, retval);
+        CHECK_EQUAL(PEAK_FALSE, is_empty);
+        
+        retval = peak_mpmc_unbound_locked_fifo_queue_push(&queue, &nodes[2]);
+        assert(PEAK_SUCCESS == retval);
+        
+        
+        is_empty = TRUE;
+        retval = peak_mpmc_unbound_locked_fifo_queue_is_empty(&queue, &is_empty);
+        CHECK_EQUAL(PEAK_SUCCESS, retval);
+        CHECK_EQUAL(PEAK_FALSE, is_empty);
+        
+        // The return nodes needn't be handled as they are all on the stack.
+        struct peak_unbound_fifo_queue_node_s *return_node_dummy;
+        return_node_dummy = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
+        assert(NULL != return_node_dummy);
+        
+        is_empty = TRUE;
+        retval = peak_mpmc_unbound_locked_fifo_queue_is_empty(&queue, &is_empty);
+        CHECK_EQUAL(PEAK_SUCCESS, retval);
+        CHECK_EQUAL(PEAK_FALSE, is_empty);
+        
+        return_node_dummy = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
+        assert(NULL != return_node_dummy);
+        
+        is_empty = FALSE;
+        retval = peak_mpmc_unbound_locked_fifo_queue_is_empty(&queue, &is_empty);
+        CHECK_EQUAL(PEAK_SUCCESS, retval);
+        CHECK_EQUAL(PEAK_TRUE, is_empty);
+        
+        
+        retval = peak_mpmc_unbound_locked_fifo_queue_push(&queue, &nodes[3]);
+        assert(PEAK_SUCCESS == retval);
+        
+        
+        is_empty = TRUE;
+        retval = peak_mpmc_unbound_locked_fifo_queue_is_empty(&queue, &is_empty);
+        CHECK_EQUAL(PEAK_SUCCESS, retval);
+        CHECK_EQUAL(PEAK_FALSE, is_empty);
+        
+        
+        return_node_dummy = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
+        assert(NULL != return_node_dummy);
+        
+        is_empty = FALSE;
+        retval = peak_mpmc_unbound_locked_fifo_queue_is_empty(&queue, &is_empty);
+        CHECK_EQUAL(PEAK_SUCCESS, retval);
+        CHECK_EQUAL(PEAK_TRUE, is_empty);
+        
+        // The remaining nodes needn't be handled as they are all on the stack.
+        struct peak_unbound_fifo_queue_node_s *remaining_nodes_dummy;
+        retval = peak_mpmc_unbound_locked_fifo_queue_finalize(&queue, 
+                                                              &remaining_nodes_dummy);
+        assert(PEAK_SUCCESS == retval);
+        
+    }
     
     namespace {
         

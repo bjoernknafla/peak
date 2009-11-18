@@ -25,7 +25,7 @@
  * @attention All functions other than create expect a valid (initialized, non
  *            NULL) queue to operate on.
  *
- * TODO: @todo Add error return code documentation.
+ * TODO: @todo Add error return code documentation and finish documentation.
  *
  * TODO: @todo Re-evaluate if it is better to keep all memory management out of
  *             the queues functions. Then the user would need to trypop the
@@ -61,6 +61,7 @@
 #include <amp/amp_raw.h>
 
 #include <peak/peak_memory.h>
+#include <peak/peak_stddef.h>
 
 
 
@@ -172,6 +173,17 @@ extern "C" {
    
     
 
+    /**
+     * Sets is_empty to PEAK_TRUE if the queue is empty, otherwise sets it to 
+     * PEAK_FALSE.
+     *
+     * @attention Checking for emptyness is an expensive operation that 
+     *            decreases the performance of concurrently ongoing pushes
+     *            and pops.
+     */
+    int peak_mpmc_unbound_locked_fifo_queue_is_empty(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
+                                                     PEAK_BOOL *is_empty);
+    
 
     
     /**
