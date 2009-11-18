@@ -36,6 +36,8 @@ namespace {
     
     /**
      *
+     * @attention Don't copy - but pointers to it can be copied.
+     *
      * TODO: @todo Add a compute context field to pass memory, statistics, 
      *             debugging, error, enqueueu handling to job.
      *
@@ -44,7 +46,7 @@ namespace {
      */
     struct peak_compute_engine_s {
       
-        peak_mpmc_unbound_locked_fifo_queue_s *queue;
+        struct peak_mpmc_unbound_locked_fifo_queue_s *queue;
         
         size_t cycles_till_run_check;
         
@@ -67,6 +69,17 @@ namespace {
         struct peak_compute_group_context_s *group_context;
         struct amp_raw_thread_s thread;
     };
+    
+    
+    int peak_compute_engine_init(struct peak_compute_engine_s *engine,
+                                 struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
+                                 size_t cycles_till_run_check);
+    int peak_compute_engine_finalize(struct peak_compute_engine_s *engine);
+    struct peak_compute_engine_context* peak_compute_engine_get_context(struct peak_compute_engine_s *engine);
+    int peak_compute_engine_launch(struct peak_compute_engine_s *engine, struct amp_raw_thread_s *non_launched_thread);
+    int peak_compute_engine_join(struct peak_compute_engine_s *engine, struct amp_raw_thread_s **joined_thread);
+    
+    
     
     /**
      *
