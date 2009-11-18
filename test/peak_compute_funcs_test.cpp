@@ -19,11 +19,10 @@
 #include <peak/peak_mpmc_unbound_locked_fifo_queue.h>
 #include <peak/peak_stddef.h>
 #include <peak/peak_memory.h>
+#include <peak/peak_data_alignment.h>
 
 
 
-#error Add the group context to the tests already written.
-#error finish the group and group context code and functions.
 
 namespace {
     
@@ -37,12 +36,25 @@ namespace {
      *
      * TODO: @todo Add a compute context field to pass memory, statistics, 
      *             debugging, error, enqueueu handling to job.
+     *
+     * TODO: @todo Move the allocator functions and contexts over to the compute
+     *             engine to allow per engine (per thread) versions of them.
      */
     struct peak_compute_engine_s {
       
         peak_mpmc_unbound_locked_fifo_queue_s *queue;
         
         size_t cycles_till_run_check;
+        
+        /* Default allocation and deallocation */
+        peak_alloc_aligned_func default_alloc_aligned;
+        peak_dealloc_aligned_func default_dealloc_aligned;
+        void *default_allocator_context;
+        
+        /* Node allocation and deallocation */
+        peak_alloc_aligned_func node_alloc_aligned;
+        peak_dealloc_aligned_func node_dealloc_aligned;
+        void *node_allocator_context;
         
         /* If exit is set to 1 the compute engine will exit at latest after 
          * cycles_till_exit_check.
@@ -88,7 +100,7 @@ namespace {
         size_t number_of_engines;
         struct peak_compute_engine_s *engines;
         
-        struct peak_compute_group_engine_context_s *group_context;
+        struct peak_compute_group_context_s *group_context;
         
         peak_compute_func compute_func;
     };
@@ -100,21 +112,25 @@ namespace {
      */
     int peak_compute_group_create(struct peak_compute_group_s **group,
                                   size_t number_of_threads,
-                                  struct peak_compute_group_engine_context_s *group_context);
+                                  struct peak_compute_group_context_s *group_context);
     
     /* Stops all group threads while there might be unhandled jobs and 
      * deallocates the jobs and the groups memory.
      */
     int peak_comute_group_destroy(struct peak_compute_group_s *group);
     
-    struct peak_compute_group_engine_context_s * peak_compute_group_get_context(struct peak_compute_group_s *group)
+    struct peak_compute_group_context_s * peak_compute_group_get_context(struct peak_compute_group_s *group)
     {
         assert(NULL != group);
         
         return group->group_context;
     }
     
-    
+    /**
+     *
+     * TODO: @todo Add and document a special way to enqueue jobs from inside 
+     *             a compute engine job context.
+     */
     int peak_compute_group_dispatch_async(struct peak_compute_group_s *group,
                                           void *job_data,
                                           peak_job_func job_func)
@@ -122,22 +138,26 @@ namespace {
         assert(NULL != group);
         assert(NULL != job_func);
         
-        struct peak_compute_group_engine_context_s *group_context = group->group_context;
+        struct peak_compute_group_context_s *group_context = group->group_context;
         
-        struct peak_unbound_fifo_queue_node_s *node = group_context->node_alloc_aligned(group_context->node_allocator, 
-                                                                                        sizeof(struct peak_unbound_fifo_queue_node_s),
-                                                                                        PEAK_ATOMIC_ACCESS_ALIGNMENT);
+        struct peak_unbound_fifo_queue_node_s *node = 
+            (struct peak_unbound_fifo_queue_node_s *)group_context->node_alloc_aligned(group_context->node_allocator_context, 
+                                                                                       sizeof(struct peak_unbound_fifo_queue_node_s),
+                                                                                       PEAK_ATOMIC_ACCESS_ALIGNMENT);
         
         node->data.job_func = job_func;
         node->data.job_data = job_data;
         
         // Node ownership is handed over to the queue and on trypop to the 
         // engine popping the queue.
-        retval = peak_mpmc_unbound_locked_fifo_queue_push(&group->queue,
+        int retval = peak_mpmc_unbound_locked_fifo_queue_push(&group->queue,
                                                           node);
         
         return retval;
     }
+    
+    
+    
     
     /**
      * Blocks until the groups queue signals that it is empty.
@@ -166,8 +186,8 @@ namespace {
     {
         struct peak_compute_engine_s *context = (struct peak_compute_engine_s *)ctxt;
         
-        void *node_allocator_context = context->group_context->node_allocator_context;
-        peak_dealloc_func node_dealloc_aligned_func = context->group_context->node_dealloc_aligned;
+        void *node_allocator_context = context->node_allocator_context;
+        peak_dealloc_func node_dealloc_aligned_func = context->node_dealloc_aligned;
         
         int keep_running = 1;
         size_t cycles_till_run_check = context->cycles_till_run_check;
@@ -183,7 +203,7 @@ namespace {
                  */
                 data->job_func(data->job_data /*,context->job_execution_context */);
                 
-                node_dealloc_func(node_allocator_context, node); 
+                node_dealloc_aligned_func(node_allocator_context, node); 
             }
             
             /* TODO: @todo Move idle and contention detection and management 
@@ -238,6 +258,22 @@ namespace {
         assert(AMP_SUCCESS == retval);
     }
     
+    
+    void* dummy_malloc_aligned(void *allocator_context, size_t bytes_to_alloc, size_t alignment)
+    {
+        (void)allocator_context;
+        (void)bytes_to_alloc;
+        (void)alignment;
+        
+        return NULL;
+    }
+    
+    void dummy_free_aligned(void *allocator_context, void *pointer)
+    {
+        (void)allocator_context;
+        (void)pointer;
+    }
+    
 } // anonymous namespace
 
 
@@ -255,6 +291,16 @@ SUITE(peak_compute_funcs)
         struct peak_compute_engine_s ce;
         ce.queue = &queue;
         ce.cycles_till_run_check = 16;
+        
+        // No memory management takes place, therefore using dummy allocators
+        // and deallocators.
+        ce.default_alloc_aligned = dummy_malloc_aligned;
+        ce.default_dealloc_aligned = dummy_free_aligned;
+        ce.default_allocator_context = NULL;
+        ce.node_alloc_aligned = dummy_malloc_aligned;
+        ce.node_dealloc_aligned = dummy_free_aligned;
+        ce.node_allocator_context = NULL;
+        
         retval = amp_raw_mutex_init(&ce.run_mutex);
         assert(AMP_SUCCESS == retval);
         ce.run = 1;
@@ -317,6 +363,16 @@ SUITE(peak_compute_funcs)
         struct peak_compute_engine_s ce;
         ce.queue = &queue;
         ce.cycles_till_run_check = 16;
+        
+        // No memory management takes place, therefore using dummy allocators
+        // and deallocators.
+        ce.default_alloc_aligned = dummy_malloc_aligned;
+        ce.default_dealloc_aligned = dummy_free_aligned;
+        ce.default_allocator_context = NULL;
+        ce.node_alloc_aligned = dummy_malloc_aligned;
+        ce.node_dealloc_aligned = dummy_free_aligned;
+        ce.node_allocator_context = NULL;
+        
         retval = amp_raw_mutex_init(&ce.run_mutex);
         assert(AMP_SUCCESS == retval);
         ce.run = 1;
