@@ -8,8 +8,10 @@
 
 // While using the amp framework no additional header search paths must be set.
 
-AMP_ROOT_PATH = "/Users/bknafla/Projects/amp/"
-AMP_HEADER_PATHS = "$(AMP_ROOT_PATH)/src/c/" "$(AMP_ROOT_PATH)/src/cpp/"
-AMP_LIBRARY_PATH = "$(AMP_ROOT_PATH)/build_env/xcode_3_2/amp/build/$(CONFIGURATION)/"
+AMP_ROOT_PATH = $(AMP)
+AMP_HEADER_PATHS = 
+// "$(AMP_ROOT_PATH)/src/c/" "$(AMP_ROOT_PATH)/src/cpp/"
+AMP_LIBRARY_PATH = 
+// "$(AMP_ROOT_PATH)/build_env/xcode_3_2/amp/build/$(CONFIGURATION)/"
 
 AMP_PREPROCESSOR_DEFINITIONS = AMP_USE_LIBDISPATCH_SEMAPHORES AMP_USE_PTHREADS

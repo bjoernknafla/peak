@@ -15,6 +15,7 @@
 #include <stddef.h>
 #include <assert.h>
 
+#include <amp/amp.h>
 #include <amp/amp_raw.h>
 #include <peak/peak_mpmc_unbound_locked_fifo_queue.h>
 #include <peak/peak_stddef.h>
@@ -60,7 +61,7 @@ namespace {
         peak_dealloc_aligned_func node_dealloc_aligned;
         void *node_allocator_context;
         
-        /* If exit is set to 1 the compute engine will exit at latest after 
+        /* If run is set to 0 the compute engine will exit at latest after 
          * cycles_till_exit_check.
          */
         struct amp_raw_mutex_s run_mutex;

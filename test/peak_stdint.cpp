@@ -12,7 +12,7 @@
  *
  * TODO: @todo Add platform detection (via poc) and test intptr_t and uintptr_t.
  *
- * TODO @todo Add checks for singdness (see poc).
+ * TODO @todo Add checks for signdness (see poc).
  */
 
 #include <UnitTest++.h>

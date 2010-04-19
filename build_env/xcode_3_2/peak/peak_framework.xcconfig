@@ -1,0 +1,25 @@
+//
+//  peak_framework.xcconfig
+//  peak
+//
+//  Created by Björn Knafla on 19.04.10.
+//  Copyright 2010 Bjoern Knafla www.bjoernknafla.com. All rights reserved.
+//
+
+#include "peak"
+#include "amp"
+
+GCC_PREPROCESSOR_DEFINITIONS = PEAK_USE_STDC99 PEAK_USE_GCC PEAK_USE_FOUR_BYTE_MEMORY_POINTER_ALIGNMENT $(AMP_PREPROCESSOR_DEFINITIONS)
+
+HEADER_SEARCH_PATHS = $(PEAK_HEADER_PATHS) $(UNITTESTCPP_HEADER_PATH) $(AMP_HEADER_PATHS)
+
+GCC_VERSION = com.apple.compilers.llvm.clang.1_0
+
+INSTALL_PATH = @executable_path/../Frameworks
+OTHER_LDFLAGS = 
+// -framework Foundation -framework AppKit
+
+FRAMEWORK_VERSION = A
+INFOPLIST_FILE = peak_framework-Info.plist
+
+PRODUCT_NAME = peak
