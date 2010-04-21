@@ -2,10 +2,10 @@ Error and Exception Handling
 
 First iteration doesn't allow exceptions or error codes to leave a job / kernel.
 In the end I might want to differentiate: no-error-leaking jobs and jobs which
-might even return a value (a future or primise) and allow packaging of errors
+might even return a value (a future or promise) and allow packaging of errors
 and exceptions and sending them to the future.
 
-To allow aboning of compute engine threads let the first one encountering an
+To allow aborting of compute engine threads let the first one encountering an
 error set a flag visible to all? Only helps with fine-grained jobs.
 
 Best first iteration: immediate crashing on ignoring errors - and: only schedule

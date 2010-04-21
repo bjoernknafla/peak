@@ -14,10 +14,6 @@
 		326776E210A19A8900CC7576 /* pmem_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 326776E110A19A8900CC7576 /* pmem_test.cpp */; };
 		326776E610A19B5400CC7576 /* peak_stdint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 326776E510A19B5400CC7576 /* peak_stdint.cpp */; };
 		326776EA10A19CD800CC7576 /* peak_mpmc_unbound_locked_fifo_queue_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 326776E910A19CD800CC7576 /* peak_mpmc_unbound_locked_fifo_queue_test.cpp */; };
-		32C16622109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C16621109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.c */; };
-		32C1872F10A08F54001852EE /* peak_memory.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C1872E10A08F54001852EE /* peak_memory.c */; };
-		32C1875110A0991C001852EE /* peak_data_alignment.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C1875010A0991C001852EE /* peak_data_alignment.c */; };
-		32C1877B10A0CC6D001852EE /* pmem_generic.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C1877A10A0CC6D001852EE /* pmem_generic.c */; };
 		32C1879510A0DB06001852EE /* experiment_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 321E22A6108CA2A40080BFE6 /* experiment_test.cpp */; };
 		32D38B51117C6F9800D03C80 /* peak.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 32D38B3E117C6C1900D03C80 /* peak.framework */; };
 		32D38BA6117C8B5200D03C80 /* amp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 32D38B57117C8ACD00D03C80 /* amp.framework */; };
@@ -31,6 +27,8 @@
 		32D38BD1117C9D8A00D03C80 /* peak_memory.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C1872E10A08F54001852EE /* peak_memory.c */; };
 		32D38BD2117C9D8B00D03C80 /* peak_data_alignment.h in Headers */ = {isa = PBXBuildFile; fileRef = 32C1874F10A0991C001852EE /* peak_data_alignment.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		32D38BD3117C9D8B00D03C80 /* peak_data_alignment.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C1875010A0991C001852EE /* peak_data_alignment.c */; };
+		32DE7671117F8A5B003CA916 /* amp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 32D38B57117C8ACD00D03C80 /* amp.framework */; };
+		32DE7683117F8A5F003CA916 /* kaizen.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 32D38B59117C8ACD00D03C80 /* kaizen.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -101,8 +99,22 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 32D38B3D117C6C1900D03C80 /* peak_framework */;
+			remoteGlobalIDString = 32D38B3D117C6C1900D03C80;
 			remoteInfo = peak_framework;
+		};
+		32DE769A117F8AB5003CA916 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 32DE7692117F8AB5003CA916 /* kaizen.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 8DC2EF5B0486A6940098B216;
+			remoteInfo = kaizen;
+		};
+		32DE769C117F8AB5003CA916 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 32DE7692117F8AB5003CA916 /* kaizen.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 32A6A7A0116E36FB00C528CA;
+			remoteInfo = kaizen_unit_test;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -144,6 +156,8 @@
 		32D38B57117C8ACD00D03C80 /* amp.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = amp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		32D38B59117C8ACD00D03C80 /* kaizen.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = kaizen.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		32D38B5B117C8ACD00D03C80 /* poc.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = poc.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		32DE7692117F8AB5003CA916 /* kaizen.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = kaizen.xcodeproj; path = ../../../../kaizen/build_env/xcode_3_2/kaizen/kaizen.xcodeproj; sourceTree = SOURCE_ROOT; };
+		32DE76A0117F8AEA003CA916 /* kaizen.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = kaizen.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -151,7 +165,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				32DE7671117F8A5B003CA916 /* amp.framework in Frameworks */,
 				32D38B51117C6F9800D03C80 /* peak.framework in Frameworks */,
+				32DE7683117F8A5F003CA916 /* kaizen.framework in Frameworks */,
 				321E22B9108CA41F0080BFE6 /* libUnitTest++.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -170,6 +186,7 @@
 		08FB7794FE84155DC02AAC07 /* peak */ = {
 			isa = PBXGroup;
 			children = (
+				32DE7692117F8AB5003CA916 /* kaizen.xcodeproj */,
 				328DEBBC117C586700F7A0C0 /* poc.xcodeproj */,
 				32C18718109F5E78001852EE /* amp.xcodeproj */,
 				08FB7795FE84155DC02AAC07 /* Source */,
@@ -223,6 +240,7 @@
 			isa = PBXGroup;
 			children = (
 				321E22A7108CA2B30080BFE6 /* UnitTest++.xcconfig */,
+				32DE76A0117F8AEA003CA916 /* kaizen.xcconfig */,
 				32C18725109F5ED9001852EE /* amp.xcconfig */,
 				321E22A8108CA2B30080BFE6 /* compiler_warnings.xcconfig */,
 				321E22A9108CA2B30080BFE6 /* peak.xcconfig */,
@@ -315,10 +333,19 @@
 		328DEBEC117C58A400F7A0C0 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				328DEBF4117C58A400F7A0C0 /* amp_raw.framework */,
+				328DEBF4117C58A400F7A0C0 /* amp.framework */,
 				328DEBF6117C58A400F7A0C0 /* amp_unit_tests */,
 				328DEBF8117C58A400F7A0C0 /* libamp.a */,
 				328DEBFA117C58A400F7A0C0 /* amp_platform_check */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		32DE7693117F8AB5003CA916 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				32DE769B117F8AB5003CA916 /* kaizen.framework */,
+				32DE769D117F8AB5003CA916 /* kaizen_unit_test */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -403,6 +430,10 @@
 					ProjectRef = 32C18718109F5E78001852EE /* amp.xcodeproj */;
 				},
 				{
+					ProductGroup = 32DE7693117F8AB5003CA916 /* Products */;
+					ProjectRef = 32DE7692117F8AB5003CA916 /* kaizen.xcodeproj */;
+				},
+				{
 					ProductGroup = 328DEBD6117C588500F7A0C0 /* Products */;
 					ProjectRef = 328DEBBC117C586700F7A0C0 /* poc.xcodeproj */;
 				},
@@ -451,10 +482,10 @@
 			remoteRef = 328DEBE7117C588500F7A0C0 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		328DEBF4117C58A400F7A0C0 /* amp_raw.framework */ = {
+		328DEBF4117C58A400F7A0C0 /* amp.framework */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.framework;
-			path = amp_raw.framework;
+			path = amp.framework;
 			remoteRef = 328DEBF3117C58A400F7A0C0 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
@@ -479,6 +510,20 @@
 			remoteRef = 328DEBF9117C58A400F7A0C0 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
+		32DE769B117F8AB5003CA916 /* kaizen.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = kaizen.framework;
+			remoteRef = 32DE769A117F8AB5003CA916 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		32DE769D117F8AB5003CA916 /* kaizen_unit_test */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = kaizen_unit_test;
+			remoteRef = 32DE769C117F8AB5003CA916 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 /* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
@@ -498,10 +543,6 @@
 			files = (
 				321E22C9108CA4BE0080BFE6 /* unit_tests_main.cpp in Sources */,
 				321E4387108DBD160080BFE6 /* peak_data_alignment_test.cpp in Sources */,
-				32C16622109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.c in Sources */,
-				32C1872F10A08F54001852EE /* peak_memory.c in Sources */,
-				32C1875110A0991C001852EE /* peak_data_alignment.c in Sources */,
-				32C1877B10A0CC6D001852EE /* pmem_generic.c in Sources */,
 				32C1879510A0DB06001852EE /* experiment_test.cpp in Sources */,
 				326776E210A19A8900CC7576 /* pmem_test.cpp in Sources */,
 				326776E610A19B5400CC7576 /* peak_stdint.cpp in Sources */,

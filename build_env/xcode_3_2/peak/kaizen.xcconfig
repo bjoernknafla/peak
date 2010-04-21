@@ -1,0 +1,10 @@
+//
+//  kaizen.xcconfig
+//  peak
+//
+//  Created by Björn Knafla on 21.04.10.
+//  Copyright 2010 Bjoern Knafla www.bjoernknafla.com. All rights reserved.
+//
+
+KAIZEN_ROOT_PATH = $(KAIZEN)
+KAIZEN_PREPROCESSOR_DEFINITIONS = KAIZEN_USE_APPLE_MACH_ABSOLUTE_TIME
