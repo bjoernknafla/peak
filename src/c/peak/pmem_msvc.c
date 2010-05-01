@@ -22,7 +22,7 @@
 
 
 
-void *pmem_malloc_aligned(size_t bytes, size_t alignment)
+void *pmem_malloc_aligned(size_t alignment, size_t size_in_bytes)
 {
     // TODO: @todo Decide if to use _aligned_malloc_dbg in debug mode.
     assert(0 != peak_is_power_of_two(alignment));

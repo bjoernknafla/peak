@@ -169,7 +169,7 @@ extern "C" {
      */
     int peak_unbound_fifo_queue_node_clear_nodes(struct peak_unbound_fifo_queue_node_s *nodes,
                                                  void *node_allocator,
-                                                 peak_dealloc_func node_dealloc);
+                                                 peak_dealloc_func_t node_dealloc);
    
     
 

@@ -21,7 +21,7 @@
 
 
 
-void *pmem_malloc_aligned(size_t bytes, size_t alignment)
+void *pmem_malloc_aligned(size_t alignment, size_t bytes)
 {
     assert(0 < alignment);
     /* (2^16 - 1) - 2 to reserve space to store how many pointers to  

@@ -42,14 +42,14 @@ extern "C" {
      * The byte alignment can be at max 65533 (keep it below pow(2, 12) to
      * play it safe).
      *
-     * If no memory could be allocated NULL is returned and
-     * errno is set to ENOMEM.
+     * If no memory could be allocated NULL is returned.
+     *
      * If one of the arguments is bad (e.g. bad alignment argument, or a 
      * size_in_bytes of 0) NULL might be returned and errno might be set to 
      * EINVAL. This is a programmer error and possibly an error handler is 
      * called or in debug mode an assertion triggers.
      */
-    void* pmem_malloc_aligned(size_t size_in_bytes, size_t alignment);
+    void* pmem_malloc_aligned(size_t alignment, size_t size_in_bytes);
     
     
     /**

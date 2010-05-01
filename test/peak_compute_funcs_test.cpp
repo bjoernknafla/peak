@@ -22,6 +22,8 @@
 #include <peak/peak_data_alignment.h>
 #include <peak/peak_stdint.h>
 #include <peak/peak_mpmc_unbound_locked_fifo_queue.h>
+#include <peak/peak_dependency.h>
+#include <peak/peak_internal_dependency.h>
 
 
 
@@ -36,7 +38,6 @@ namespace
     struct peak_job_s;
     struct peak_job_vtbl_s;
     struct peak_job_stats_s;
-    struct peak_job_finihs_group_s;
     struct peak_compute_unit_job_context_data_s;
     struct peak_compute_unit_job_context_functions_s;
     struct peak_compute_unit_s;
@@ -75,7 +76,7 @@ namespace
     };
     
     // TODO: @todo Add check that this is 64Byte or as big as actual cache line.
-    // TODO: @todo Add a counter or other data-partition field to enable simple data-parallel jobs.
+    // TODO: @todo Add a dependency or other data-partition field to enable simple data-parallel jobs.
     struct peak_job_s {
         
         
@@ -91,7 +92,7 @@ namespace
         void* job_context; // User supplied data for job. An index or device pointer for device driven compute units.
         
         union {
-            struct peak_job_completion_counter_s* completion_counter; // A job can belong to a job group that enqueues a continuity job when all jobs of the group have finished.
+            peak_dependency_t completion_dependency; // A job can belong to a job group that enqueues a continuity job when all jobs of the group have finished.
             amp_raw_semaphore_t job_sync_call_sema; // Enqueuer of job blocks while waiting on job to finish. If a job caller blocks and the job belongs to a group the blocking caller stores and manages the group for the job.
             // peak_job_cancle_group* job_cancel_group;
         } job_group;
@@ -103,139 +104,8 @@ namespace
     };
     
     
-    // Counter of how many jobs belonging to the group have finished. Can enqueue a continuity job into a selectable queue when all jobs of the group have finished execution.
-    struct peak_job_completion_counter_s {
-      
-        // Add an id
-        // Add stats
-        // Add atomic counter
-        // Add job, job context, queue/feeder, etc. to enqueue continuity job when becoming empty.
-        // User context finalization function
-        
-        // TODO: @todo Implement thread-safe group.
-        struct amp_raw_mutex_s counter_mutex;
-        uint64_t uncompleted_jobs_counter;
-        
-    };
     
-    // Only for internal testing, returns how many jobs that belong to the counter havn't completed yet.
-    int peak_internal_job_completion_counter_get_count(struct peak_job_completion_counter_s* counter, uint64_t* result);
-    int peak_internal_job_completion_counter_get_count(struct peak_job_completion_counter_s* counter, uint64_t* result)
-    {
-        assert(NULL != counter);
-        assert(NULL != result);
-        
-        int errc = amp_raw_mutex_lock(&counter->counter_mutex);
-        assert(AMP_SUCCESS == errc);
-        
-        *result = counter->uncompleted_jobs_counter;
-        
-        errc = amp_raw_mutex_unlock(&counter->counter_mutex);
-        assert(AMP_SUCCESS == errc);
-        
-        return PEAK_SUCCESS;
-    }
-    
-    int peak_job_completion_counter_init(struct peak_job_completion_counter_s* counter);
-    int peak_job_completion_counter_init(struct peak_job_completion_counter_s* counter)
-    {
-        assert(NULL != counter);
-        if (NULL == counter) {
-            return EINVAL;
-        }
-        
-        int errc = amp_raw_mutex_init(&counter->counter_mutex);
-        if (AMP_SUCCESS != errc) {
-            return errc;
-        }
-        
-        counter->uncompleted_jobs_counter = 0;
-        
-        return PEAK_SUCCESS;
-    }
-    
-    
-    int peak_job_completion_counter_finalize(struct peak_job_completion_counter_s* counter);
-    int peak_job_completion_counter_finalize(struct peak_job_completion_counter_s* counter)
-    {
-        assert(NULL != counter);
-        if (NULL == counter) {
-            return EINVAL;
-        }
-        
-        uint64_t count = 0;
-        
-        int errc = amp_raw_mutex_trylock(&counter->counter_mutex);
-        assert(EBUSY == errc || AMP_SUCCESS == errc);
-        if (AMP_SUCCESS == errc) {
-            count = counter->uncompleted_jobs_counter;
-        } else {
-            // TODO: @todo Decide if to crash if return value is not AMP_SUCCESS or EBUSY.
-            return errc;
-        }
-        
-        errc = amp_raw_mutex_unlock(&counter->counter_mutex);
-        assert(AMP_SUCCESS == errc);
-        
-        if (0 != count) {
-            return EBUSY;
-        }
-        
-        errc = amp_raw_mutex_finalize(&counter->counter_mutex);
-        assert(AMP_SUCCESS == errc);
-        
-        return errc;
-    }
-    
-    
-    int peak_job_completion_counter_increment(struct peak_job_completion_counter_s* counter);
-    int peak_job_completion_counter_increment(struct peak_job_completion_counter_s* counter)
-    {
-        assert(NULL != counter);
-        
-        int errc = amp_raw_mutex_lock(&counter->counter_mutex);
-        assert(AMP_SUCCESS == errc);
-        
 
-        uint64_t const count = counter->uncompleted_jobs_counter;
-        assert(UINT64_MAX != count);
-        if (UINT64_MAX == count) {
-            // Too many jobs try to increase the counter.
-            return EAGAIN;
-        }
-
-        counter->uncompleted_jobs_counter = count + 1;
-        
-        errc = amp_raw_mutex_unlock(&counter->counter_mutex);
-        assert(AMP_SUCCESS == errc);
-        
-        return PEAK_SUCCESS;
-    }
-    
-    
-    int peak_job_completion_counter_decrement(struct peak_job_completion_counter_s* group);
-    int peak_job_completion_counter_decrement(struct peak_job_completion_counter_s* group)
-    {
-        assert(NULL != group);
-        
-        int errc = amp_raw_mutex_lock(&group->counter_mutex);
-        assert(AMP_SUCCESS == errc);
-        
-        
-        uint64_t const counter = group->uncompleted_jobs_counter;
-        assert(0 != counter);
-        if (0 == counter) {
-            // Too many jobs try to increase the counter.
-            return EAGAIN;
-        }
-        
-        group->uncompleted_jobs_counter = counter - 1;
-        
-        errc = amp_raw_mutex_unlock(&group->counter_mutex);
-        assert(AMP_SUCCESS == errc);
-        
-        return PEAK_SUCCESS;
-    }
     
     
     
@@ -328,16 +198,6 @@ namespace
         
     };
      */
-#define PEAK_JOB_TYPE_MASK (((uint32_t)2u << 24u) - 1u)
-#define PEAK_JOB_FLAG_MASK (~(PEAK_JOB_TYPE_MASK))
-    
-#define PEAK_MINIMAL_JOB_TYPE 0u
-#define PEAK_UNIT_CONTEXT_AWARE_JOB_TYPE 1u
-#define PEAK_WORKLOAD_JOB_TYPE 2u
-    
-#define PEAK_SYNC_JOB_FLAG ((uint32_t)1u << 24u)
-#define PEAK_FINISH_GROUP_JOB_FLAG ((uint32_t)1u << 25u)
-#define PEAK_CANCEL_GROUP_JOB_FLAG ((uint32_t)1u << 26u)
     
     
     int peak_job_execute_in_minimal_context(struct peak_job_s const* job,
@@ -377,15 +237,15 @@ namespace
         return return_code;
     }
     
-    int peak_job_complete_and_notify_counter_call(struct peak_job_s const* job);
-    int peak_job_complete_and_notify_counter_call(struct peak_job_s const* job)
+    int peak_job_complete_and_notify_dependency_call(struct peak_job_s const* job);
+    int peak_job_complete_and_notify_dependency_call(struct peak_job_s const* job)
     {
         int return_code = PEAK_SUCCESS;
         
-        struct peak_job_completion_counter_s* completion_counter = job->job_group.completion_counter;
-        assert(NULL != completion_counter);
+        peak_dependency_t completion_dependency = job->job_group.completion_dependency;
+        assert(NULL != completion_dependency);
         
-        return_code = peak_job_completion_counter_decrement(completion_counter);
+        return_code = peak_dependency_decrease(completion_dependency);
         
         return return_code;
     }
@@ -475,7 +335,7 @@ SUITE(peak_compute_funcs_test)
         job.vtbl = &vtbl;
         job.job_func.minimal_job_func = &execute_one_minimal_job_func;
         job.job_context = &job_context;
-        job.job_group.completion_counter = NULL;
+        job.job_group.completion_dependency = NULL;
         job.stats = NULL;
         
         int const errc = peak_job_execute(&job,
@@ -527,14 +387,17 @@ SUITE(peak_compute_funcs_test)
     }
     
     
-    TEST(execute_and_count_one_minimal_job_func)
+    TEST(execute_and_dependency_one_minimal_job_func)
     {
         struct peak_job_vtbl_s vtbl;
         vtbl.execute_in_context = &peak_job_execute_in_minimal_context;
-        vtbl.complete = &peak_job_complete_and_notify_counter_call;
+        vtbl.complete = &peak_job_complete_and_notify_dependency_call;
         
-        struct peak_job_completion_counter_s counter;
-        int errc = peak_job_completion_counter_init(&counter);
+        peak_dependency_t dependency  = NULL;
+        int errc = peak_dependency_create(&dependency,
+                                          NULL,
+                                          peak_malloc,
+                                          peak_free);
         assert(PEAK_SUCCESS == errc);
         
         struct peak_compute_unit_s unit;
@@ -550,10 +413,10 @@ SUITE(peak_compute_funcs_test)
         job.vtbl = &vtbl;
         job.job_func.minimal_job_func = &execute_one_minimal_job_func;
         job.job_context = &job_context;
-        job.job_group.completion_counter = &counter;
+        job.job_group.completion_dependency = dependency;
         job.stats = NULL;
         
-        errc = peak_job_completion_counter_increment(&counter);
+        errc = peak_dependency_increase(dependency);
         assert(PEAK_SUCCESS == errc);
         
         errc = peak_job_execute(&job,
@@ -561,15 +424,21 @@ SUITE(peak_compute_funcs_test)
         assert(PEAK_SUCCESS == errc);
         
         uint64_t uncompleted_count = 42;
-        errc = peak_internal_job_completion_counter_get_count(&counter, &uncompleted_count);
+        errc = peak_internal_dependency_get_count(dependency, &uncompleted_count);
         assert(PEAK_SUCCESS == errc);
         
         CHECK_EQUAL(uncompleted_count, (uint64_t)0);
         CHECK_EQUAL(expected_job_result, job_context.result);
         
-        errc = peak_job_completion_counter_finalize(&counter);
+        errc = peak_dependency_destroy(dependency,
+                                       NULL,
+                                       peak_malloc,
+                                       peak_free);
         assert(AMP_SUCCESS == errc);
     }
+    
+    
+    
     
 } // SUITE(peak_compute_funcs_test)
 

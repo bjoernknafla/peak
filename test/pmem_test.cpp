@@ -34,7 +34,7 @@ SUITE(pmem)
                 
                 std::size_t const alignment = (1u << p);
                 for (std::size_t msize = 4; msize < 4096; msize *= 2) {
-                    void *m = pmem_malloc_aligned( msize, alignment);
+                    void *m = pmem_malloc_aligned(alignment, msize);
                     CHECK(peak_is_aligned(m, alignment));
                     pmem_free_aligned(m);
                 }

@@ -43,15 +43,15 @@ extern "C" {
      * allocator_context pointer to allocate memory from a special area of
      * memory and otherwise behaves like malloc.
      */
-    typedef void* (*peak_alloc_func)(void *allocator_context, size_t bytes);
+    typedef void* (*peak_alloc_func_t)(void *allocator_context, size_t bytes);
     
     /**
      * TODO: @todo Decide if it is a good idea to have an allocator based
      *             function with and without alignment.
      */
-    typedef void* (*peak_alloc_aligned_func)(void *allocator_context, 
-                                             size_t bytes, 
-                                             size_t alignment);
+    typedef void* (*peak_aligned_alloc_func_t)(void *allocator_context, 
+                                               size_t alignment,
+                                               size_t bytes);
     
     
     /**
@@ -61,7 +61,7 @@ extern "C" {
      *
      * TODO: @todo Add restrit keyword.
      */
-    typedef void (*peak_dealloc_func)(void *allocator_context, void *pointer);
+    typedef void (*peak_dealloc_func_t)(void *allocator_context, void *pointer);
     
     /**
      * TODO: @todo Decide if it is a good idea to have an allocator based
@@ -69,7 +69,7 @@ extern "C" {
      *
      * TODO: @todo Add restrit keyword.
      */
-    typedef void (*peak_dealloc_aligned_func)(void *allocator_context, 
+    typedef void (*peak_aligned_dealloc_func_t)(void *allocator_context, 
                                               void *pointer);
     
     
@@ -100,8 +100,8 @@ extern "C" {
      * PEAK_ATOMIC_ACCESS_ALIGNMENT.
      */
     void* peak_malloc_aligned(void *allocator_context, 
-                             size_t size_in_bytes, 
-                             size_t alignment);
+                              size_t alignment,
+                              size_t size_in_bytes);
     
     /**
      * Wrapper around pmem_free_aligned, the allocator context is ignored.

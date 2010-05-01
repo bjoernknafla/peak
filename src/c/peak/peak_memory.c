@@ -40,12 +40,12 @@ void peak_free(void *allocator_context, void *pointer)
 
 
 void* peak_malloc_aligned(void *allocator_context, 
-                         size_t size_in_bytes, 
-                         size_t alignment)
+                          size_t alignment,
+                          size_t size_in_bytes)
 {
     (void)allocator_context;
     
-    return pmem_malloc_aligned(size_in_bytes, alignment);
+    return pmem_malloc_aligned(alignment, size_in_bytes);
 }
 
 
