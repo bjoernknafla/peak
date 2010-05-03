@@ -237,12 +237,26 @@ int peak_dependency_increase(peak_dependency_t dependency)
     int errc = amp_raw_mutex_lock(&dependency->count_mutex);
     assert(AMP_SUCCESS == errc);
     {
+        /* incr have a speed advantage over decr - though as both should be
+         * balanced decr will get its change to trigger a wake up phase.
+        while(peak_counting_dependency_state != dependency->state) {
+            errc = amp_raw_condition_variable_wait(&dependency->counting_condition,
+                                                   &dependency->count_mutex);
+            assert(AMP_SUCCESS == errc);
+        }
+        */
+        
         uint64_t const count = dependency->dependency_count;
         assert(UINT64_MAX != count);
         if (UINT64_MAX != count) {
             dependency->dependency_count = count + 1;
             return_code = PEAK_SUCCESS;
         }
+        
+        /*
+        errc = amp_raw_condition_variable_signal(&dependency->counting_condition);
+        assert(AMP_SUCCESS == errc);
+         */
     }
     errc = amp_raw_mutex_unlock(&dependency->count_mutex);
     assert(AMP_SUCCESS == errc);
@@ -258,45 +272,34 @@ int peak_dependency_decrease(peak_dependency_t dependency)
     
     int errc = amp_raw_mutex_lock(&dependency->count_mutex);
     assert(AMP_SUCCESS == errc);
-    {
+    {        
+        while (peak_counting_dependency_state != dependency->state) {
+            int const ec = amp_raw_condition_variable_wait(&dependency->counting_condition,
+                                                           &dependency->count_mutex);
+            assert(AMP_SUCCESS == ec);
+        }
+        
         assert(0 != dependency->dependency_count 
                && "Unbalanced or unordered increase and decrease.");
         
-        if (1 < dependency->dependency_count
-            || 0 == dependency->waiting_count) {
+        --(dependency->dependency_count);
+        
+        if (0 == dependency->dependency_count
+            && 0 != dependency->waiting_count) {
             
-            --(dependency->dependency_count);
+            dependency->state = peak_waking_waiting_dependency_state;
+            int const ec = amp_raw_condition_variable_signal(&dependency->waking_waiting_condition);
+            assert(AMP_SUCCESS == ec);
+            
         } else {
             
-            while (peak_counting_dependency_state != dependency->state) {
-                int errc = amp_raw_condition_variable_wait(&dependency->counting_condition,
-                                                           &dependency->count_mutex);
-                assert(AMP_SUCCESS == errc);
-            }
-            
-            assert(0 != dependency->dependency_count 
-                   && "Unbalanced or unordered increase and decrease.");
-            
-            --(dependency->dependency_count);
-            
-            /* TODO: @todo Remove uncommented code-fragment */
-            if (/*0 == dependency->dependency_count
-                &&*/ 0 != dependency->waiting_count) {
-                
-                dependency->state = peak_waking_waiting_dependency_state;
-                int errc = amp_raw_condition_variable_signal(&dependency->waking_waiting_condition);
-                assert(AMP_SUCCESS == errc);
-                
-            } else {
-                
-                int errc = amp_raw_condition_variable_signal(&dependency->counting_condition);
-                assert(AMP_SUCCESS == errc);
-            }
+            int const ec = amp_raw_condition_variable_signal(&dependency->counting_condition);
+            assert(AMP_SUCCESS == ec);
         }
     }
     errc = amp_raw_mutex_unlock(&dependency->count_mutex);
     assert(AMP_SUCCESS == errc);
-
+    
     return PEAK_SUCCESS;
 }
 
@@ -312,32 +315,37 @@ int peak_dependency_wait(peak_dependency_t dependency)
         if (0 != dependency->dependency_count) {
             
             while (peak_counting_dependency_state != dependency->state) {
-                int errc = amp_raw_condition_variable_wait(&dependency->counting_condition,
+                int const ec = amp_raw_condition_variable_wait(&dependency->counting_condition,
                                                            &dependency->count_mutex);
-                assert(AMP_SUCCESS == errc);
+                assert(AMP_SUCCESS == ec);
             }
             
             if (0 != dependency->dependency_count) {
                 ++(dependency->waiting_count);
                 
+                /* Balance consumption and emitting of condition signals */
+                int const erc = amp_raw_condition_variable_signal(&dependency->counting_condition);
+                assert(AMP_SUCCESS == erc);
+                
+                
                 while (peak_waking_waiting_dependency_state != dependency->state) {
-                    int errc = amp_raw_condition_variable_wait(&dependency->waking_waiting_condition, &dependency->count_mutex);
-                    assert(AMP_SUCCESS == errc);
+                    int const ec = amp_raw_condition_variable_wait(&dependency->waking_waiting_condition, &dependency->count_mutex);
+                    assert(AMP_SUCCESS == ec);
                 }
                 
                 uint64_t const decremented_waiting_count = --(dependency->waiting_count);
                 
                 if (0 != decremented_waiting_count) {
-                    int errc = amp_raw_condition_variable_signal(&dependency->waking_waiting_condition);
-                    assert(AMP_SUCCESS == errc);
+                    int const ec = amp_raw_condition_variable_signal(&dependency->waking_waiting_condition);
+                    assert(AMP_SUCCESS == ec);
                 } else {
                     dependency->state = peak_counting_dependency_state;
-                    int errc = amp_raw_condition_variable_signal(&dependency->counting_condition);
-                    assert(AMP_SUCCESS == errc);
+                    int const ec = amp_raw_condition_variable_signal(&dependency->counting_condition);
+                    assert(AMP_SUCCESS == ec);
                 }
             } else {
-                int errc = amp_raw_condition_variable_signal(&dependency->counting_condition);
-                assert(AMP_SUCCESS == errc);
+                int const ec = amp_raw_condition_variable_signal(&dependency->counting_condition);
+                assert(AMP_SUCCESS == ec);
             }
         }
     }

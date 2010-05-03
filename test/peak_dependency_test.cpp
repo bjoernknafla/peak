@@ -662,7 +662,7 @@ SUITE(peak_dependency)
             }
         }
         
-        if (waiting_thread_count == 0) {
+        if (waiting_thread_count <= 1) {
             waiting_thread_count = 16;
         } else {
             // One thread is the main thread, so create on thread less than
