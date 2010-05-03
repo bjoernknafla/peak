@@ -105,7 +105,7 @@ int peak_raw_dependency_finalize(struct peak_raw_dependency_s* dependency)
 
 
 
-int peak_internal_dependency_get_count(peak_dependency_t dependency, 
+int peak_internal_dependency_get_dependency_count(peak_dependency_t dependency, 
                                        uint64_t* result)
 {
     assert(NULL != dependency);
@@ -124,6 +124,37 @@ int peak_internal_dependency_get_count(peak_dependency_t dependency,
     }
     
     *result = dependency->dependency_count;
+    
+    errc = amp_raw_mutex_unlock(&dependency->count_mutex);
+    assert(AMP_SUCCESS == errc);
+    if (AMP_SUCCESS != errc) {
+        return errc;
+    }
+    
+    return PEAK_SUCCESS;
+}
+
+
+
+int peak_internal_dependency_get_waiting_count(peak_dependency_t dependency, 
+                                               uint64_t* result)
+{
+    assert(NULL != dependency);
+    assert(NULL != result);
+    
+    if (NULL == dependency 
+        || NULL == result) {
+        
+        return EINVAL;
+    }
+    
+    int errc = amp_raw_mutex_lock(&dependency->count_mutex);
+    assert(AMP_SUCCESS == errc);
+    if (AMP_SUCCESS != errc) {
+        return errc;
+    }
+    
+    *result = dependency->waiting_count;
     
     errc = amp_raw_mutex_unlock(&dependency->count_mutex);
     assert(AMP_SUCCESS == errc);
@@ -248,8 +279,9 @@ int peak_dependency_decrease(peak_dependency_t dependency)
             
             --(dependency->dependency_count);
             
-            if (0 == dependency->dependency_count
-                && 0 != dependency->waiting_count) {
+            /* TODO: @todo Remove uncommented code-fragment */
+            if (/*0 == dependency->dependency_count
+                &&*/ 0 != dependency->waiting_count) {
                 
                 dependency->state = peak_waking_waiting_dependency_state;
                 int errc = amp_raw_condition_variable_signal(&dependency->waking_waiting_condition);

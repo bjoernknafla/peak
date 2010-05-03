@@ -424,7 +424,7 @@ SUITE(peak_compute_funcs_test)
         assert(PEAK_SUCCESS == errc);
         
         uint64_t uncompleted_count = 42;
-        errc = peak_internal_dependency_get_count(dependency, &uncompleted_count);
+        errc = peak_internal_dependency_get_dependency_count(dependency, &uncompleted_count);
         assert(PEAK_SUCCESS == errc);
         
         CHECK_EQUAL(uncompleted_count, (uint64_t)0);
