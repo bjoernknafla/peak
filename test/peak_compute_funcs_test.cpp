@@ -98,6 +98,10 @@ struct peak_compute_group_s {
     struct peak_mpmc_unbound_locked_fifo_queue_s* group_queue;
     
     
+    void* allocator_context;
+    peak_alloc_func_t alloc_func;
+    peak_dealloc_func_t dealloc_func;
+    
     struct peak_compute_unit_s* compute_units;
     size_t compute_unit_count; // Same or one less than total threads count. One less because one compute unit might be associated with the main thread. Unclear how to handle a thread_group in combination with the main thread...
     
@@ -214,18 +218,262 @@ namespace {
         
         int return_code = PEAK_SUCCESS;
         
-        struct peak_mpmc_unbound_locked_fifo_queue_s* queue = unit->group->group_queue;
+        struct peak_compute_group_s* group = unit->group;
+        struct peak_mpmc_unbound_locked_fifo_queue_s* queue = group->group_queue;
         struct peak_unbound_fifo_queue_node_s* node = peak_mpmc_unbound_locked_fifo_queue_trypop(queue);
         
         
         if (NULL != node) {
             
             return_code = peak_job_execute(&node->job, unit);
+            group->dealloc_func(group->allocator_context, node);
+        }
+        
+        return return_code;
+    }
+    
+    
+    static struct peak_job_vtbl_s minimal_job_no_dep_no_sync_no_stats = {
+        &peak_job_execute_in_minimal_context,
+        &peak_job_complete_without_notifaction
+    };
+    
+    static struct peak_job_vtbl_s minimal_job_with_dep_no_sync_no_stats = {
+        &peak_job_execute_in_minimal_context,
+        &peak_job_complete_and_notify_dependency_call
+    };
+    
+    
+    static struct peak_job_vtbl_s minimal_job_no_dep_with_sync_no_stats = {
+        &peak_job_execute_in_minimal_context,
+        &peak_job_complete_and_notify_synced_call
+    };
+    
+    
+    
+    int peak_compute_group_dispatch_simple_async(struct peak_compute_group_s* group,
+                                                 void* job_context,
+                                                 peak_minimal_job_func_t job_func);
+    int peak_compute_group_dispatch_simple_async(struct peak_compute_group_s* group,
+                                                 void* job_context,
+                                                 peak_minimal_job_func_t job_func)
+    {
+        assert(NULL != group);
+        assert(NULL != job_func);
+        
+        if (NULL == group
+            || NULL == job_func) {
+            
+            return EINVAL;
+        }
+        
+        int return_code = ENOMEM;
+        
+        struct peak_unbound_fifo_queue_node_s* job_node = (struct peak_unbound_fifo_queue_node_s*)group->alloc_func(group->allocator_context, sizeof(struct peak_unbound_fifo_queue_node_s));
+        assert(NULL != job_node);
+        if (NULL != job_node) {
+            
+            
+            job_node->next = NULL;
+            job_node->job.vtbl = &minimal_job_no_dep_no_sync_no_stats;
+            job_node->job.job_func.minimal_job_func = job_func;
+            job_node->job.job_context = job_context;
+            job_node->job.job_completion.completion_dependency = NULL;
+            job_node->job.stats = NULL;
+            
+            
+            /* Must be balanced by a call to the group dealloc_func after
+             * completing the job.
+             */
+            return_code = peak_mpmc_unbound_locked_fifo_queue_push(group->group_queue,
+                                                                   job_node);
+            assert(PEAK_SUCCESS == return_code);
         }
         
         return return_code;
     }
 
+    // Not testable with only one thread because of semaphore waiting.
+    int peak_compute_group_dispatch_simple_sync(struct peak_compute_group_s* group,
+                                                void* job_context,
+                                                peak_minimal_job_func_t job_func);
+    int peak_compute_group_dispatch_simple_sync(struct peak_compute_group_s* group,
+                                                void* job_context,
+                                                peak_minimal_job_func_t job_func)
+    {
+        assert(NULL != group);
+        assert(NULL != job_func);
+        
+        if (NULL == group
+            || NULL == job_func) {
+            
+            return EINVAL;
+        }
+        
+        int return_code = ENOMEM;
+        
+        /* TODO: @todo Don't create a new semaphore for each call but use a
+         *             semaphore from the calling compute unit thread.
+         */
+        struct amp_raw_semaphore_s sema;
+        return_code = amp_raw_semaphore_init(&sema, 0);
+        assert(AMP_SUCCESS == return_code);
+        if (AMP_SUCCESS != return_code) {
+            return return_code;
+        }
+        
+        struct peak_unbound_fifo_queue_node_s* job_node = (struct peak_unbound_fifo_queue_node_s*)group->alloc_func(group->allocator_context, sizeof(struct peak_unbound_fifo_queue_node_s));
+        assert(NULL != job_node);
+        if (NULL != job_node) {
+            
+            
+            job_node->next = NULL;
+            job_node->job.vtbl = &minimal_job_no_dep_with_sync_no_stats;
+            job_node->job.job_func.minimal_job_func = job_func;
+            job_node->job.job_context = job_context;
+            job_node->job.job_completion.job_sync_call_sema = &sema;
+            job_node->job.stats = NULL;
+            
+            
+            /* Must be balanced by a call to the group dealloc_func after
+             * completing the job.
+             */
+            return_code = peak_mpmc_unbound_locked_fifo_queue_push(group->group_queue,
+                                                                   job_node);
+            assert(PEAK_SUCCESS == return_code);
+            
+            return_code = amp_raw_semaphore_wait(&sema);
+            assert(AMP_SUCCESS == return_code);
+        }
+        
+        return_code = amp_raw_semaphore_finalize(&sema);
+        assert(AMP_SUCCESS == return_code);
+        
+        return return_code;
+    }
+    
+    
+    int peak_compute_group_dispatch_dependency_simple_async(struct peak_compute_group_s* group,
+                                                            peak_dependency_t dependency,
+                                                            void* job_context,
+                                                            peak_minimal_job_func_t job_func);
+    int peak_compute_group_dispatch_dependency_simple_async(struct peak_compute_group_s* group,
+                                                            peak_dependency_t dependency,
+                                                            void* job_context,
+                                                            peak_minimal_job_func_t job_func)
+    {
+        assert(NULL != group);
+        assert(NULL != dependency);
+        assert(NULL != job_func);
+        
+        if (NULL == group
+            || NULL == dependency
+            || NULL == job_func) {
+            
+            return EINVAL;
+        }
+        
+        int return_code = ENOMEM;
+        
+        
+        struct peak_unbound_fifo_queue_node_s* job_node = (struct peak_unbound_fifo_queue_node_s*)group->alloc_func(group->allocator_context, sizeof(struct peak_unbound_fifo_queue_node_s));
+        assert(NULL != job_node);
+        if (NULL != job_node) {
+            
+            
+            job_node->next = NULL;
+            job_node->job.vtbl = &minimal_job_with_dep_no_sync_no_stats;
+            job_node->job.job_func.minimal_job_func = job_func;
+            job_node->job.job_context = job_context;
+            job_node->job.job_completion.completion_dependency = dependency;
+            job_node->job.stats = NULL;
+            
+            
+            return_code = peak_dependency_increase(dependency);
+            assert(PEAK_SUCCESS == return_code);
+            
+            /* Must be balanced by a call to the group dealloc_func after
+             * completing the job.
+             */
+            return_code = peak_mpmc_unbound_locked_fifo_queue_push(group->group_queue,
+                                                                   job_node);
+            assert(PEAK_SUCCESS == return_code);
+        }
+        
+        return return_code;
+    }
+    
+    
+    int peak_compute_group_dispatch_dependency_simple_sync(struct peak_compute_group_s* group,
+                                                           peak_dependency_t dependency,
+                                                           void* job_context,
+                                                           peak_minimal_job_func_t job_func);
+    int peak_compute_group_dispatch_dependency_simple_sync(struct peak_compute_group_s* group,
+                                                           peak_dependency_t dependency,
+                                                           void* job_context,
+                                                           peak_minimal_job_func_t job_func)
+    {
+        assert(NULL != group);
+        assert(NULL != dependency);
+        assert(NULL != job_func);
+        
+        if (NULL == group
+            || NULL == dependency
+            || NULL == job_func) {
+            
+            return EINVAL;
+        }
+        
+        int return_code = ENOMEM;
+        
+        /* TODO: @todo Don't create a new semaphore for each call but use a
+         *             semaphore from the calling compute unit thread.
+         */
+        struct amp_raw_semaphore_s sema;
+        return_code = amp_raw_semaphore_init(&sema, 0);
+        assert(AMP_SUCCESS == return_code);
+        if (AMP_SUCCESS != return_code) {
+            return return_code;
+        }
+        
+        struct peak_unbound_fifo_queue_node_s* job_node = (struct peak_unbound_fifo_queue_node_s*)group->alloc_func(group->allocator_context, sizeof(struct peak_unbound_fifo_queue_node_s));
+        assert(NULL != job_node);
+        if (NULL != job_node) {
+            
+            
+            job_node->next = NULL;
+            job_node->job.vtbl = &minimal_job_no_dep_with_sync_no_stats;
+            job_node->job.job_func.minimal_job_func = job_func;
+            job_node->job.job_context = job_context;
+            job_node->job.job_completion.job_sync_call_sema = &sema;
+            job_node->job.stats = NULL;
+            
+            
+            return_code = peak_dependency_increase(dependency);
+            assert(PEAK_SUCCESS == return_code);
+            
+            /* Must be balanced by a call to the group dealloc_func after
+             * completing the job.
+             */
+            return_code = peak_mpmc_unbound_locked_fifo_queue_push(group->group_queue,
+                                                                   job_node);
+            assert(PEAK_SUCCESS == return_code);
+            
+            return_code = amp_raw_semaphore_wait(&sema);
+            assert(AMP_SUCCESS == return_code);
+            
+            return_code = peak_dependency_decrease(dependency);
+            assert(PEAK_SUCCESS == return_code);
+        }
+        
+        return_code = amp_raw_semaphore_finalize(&sema);
+        assert(AMP_SUCCESS == return_code);
+        
+        return return_code;
+    }
+
+    
+    
 } // anonymous namespace
     
 
@@ -391,6 +639,28 @@ SUITE(peak_compute_funcs_test)
     
     
     
+    namespace {
+        
+        // Ignores the size argument and just returns the allocator_context.
+        void* directly_return_context_alloc(void* allocator_context, size_t bytes);
+        void* directly_return_context_alloc(void* allocator_context, size_t bytes)
+        {
+            (void)bytes;
+            
+            return allocator_context;
+        }
+        
+        // No-op - does nothing.
+        void dummy_free(void* allocator_context, void* pointer);
+        void dummy_free(void* allocator_context, void* pointer)
+        {
+            (void)allocator_context;
+            (void)pointer;
+        }
+        
+    } // anonymous namespace
+    
+    
     TEST(enqueue_minimal_job_without_notifaction_and_drain_it)
     {
         struct peak_job_vtbl_s vtbl;
@@ -423,6 +693,9 @@ SUITE(peak_compute_funcs_test)
         struct peak_compute_unit_s compute_unit;
         struct peak_compute_group_s compute_group;
         compute_group.group_queue = &queue;
+        compute_group.allocator_context = NULL;
+        compute_group.alloc_func = &directly_return_context_alloc;
+        compute_group.dealloc_func = &dummy_free;
         compute_group.compute_units = &compute_unit;
         compute_group.compute_unit_count = 1;
         compute_group.threads = NULL;
@@ -450,6 +723,66 @@ SUITE(peak_compute_funcs_test)
         CHECK_EQUAL(expected_job_result, job_context.result);
         
     }
+    
+    
+    
+    TEST(peak_compute_group_dispatch_async_with_by_hand_draining)
+    {
+        int const expected_job_result = 42;
+        
+        struct execute_one_minimal_job_func_context_s job_context;
+        job_context.operand0 = 40;
+        job_context.operand1 = 2;
+        job_context.result = 0;
+        
+        struct peak_job_s job;
+        int errc = peak_job_invalidate(&job);
+        assert(PEAK_SUCCESS == errc);
+        
+        struct peak_unbound_fifo_queue_node_s sentry_node = {NULL, { NULL, {NULL}, NULL, {NULL}, NULL}};
+        struct peak_unbound_fifo_queue_node_s job_node = {NULL, job};
+        
+        struct peak_mpmc_unbound_locked_fifo_queue_s queue;        
+        errc = peak_mpmc_unbound_locked_fifo_queue_init(&queue, 
+                                                        &sentry_node);
+        assert(PEAK_SUCCESS == errc);
+        
+        struct peak_compute_unit_s compute_unit;
+        struct peak_compute_group_s compute_group;
+        compute_group.group_queue = &queue;
+        compute_group.allocator_context = &job_node;
+        compute_group.alloc_func = &directly_return_context_alloc;
+        compute_group.dealloc_func = &dummy_free;
+        compute_group.compute_units = &compute_unit;
+        compute_group.compute_unit_count = 1;
+        compute_group.threads = NULL;
+        compute_group.id = 0;
+        
+        compute_unit.job_context_funcs = NULL;
+        // compute_unit.job_context_data;
+        compute_unit.group = &compute_group;
+        compute_unit.thread = NULL;
+        compute_unit.id = 1;
+        
+        errc = peak_compute_group_dispatch_simple_async(&compute_group,
+                                                        &job_context,
+                                                        &execute_one_minimal_job_func);
+        assert(PEAK_SUCCESS == errc);
+        
+        errc = peak_compute_unit_drain_one(&compute_unit);
+        assert(PEAK_SUCCESS == errc);
+        
+        
+        struct peak_unbound_fifo_queue_node_s* dummy_node = NULL;
+        errc = peak_mpmc_unbound_locked_fifo_queue_finalize(&queue,
+                                                            &dummy_node);
+        assert(PEAK_SUCCESS == errc);
+        
+        CHECK_EQUAL(expected_job_result, job_context.result);
+        
+    }
+    
+    
     
 } // SUITE(peak_compute_funcs_test)
 
