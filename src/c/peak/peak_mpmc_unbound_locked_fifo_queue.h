@@ -62,6 +62,7 @@
 
 #include <peak/peak_memory.h>
 #include <peak/peak_stddef.h>
+#include <peak/peak_job.h>
 
 
 
@@ -69,24 +70,11 @@
 extern "C" {
 #endif
 
-    typedef void (*peak_job_func)(void* job_data);
-    
-    
-    /**
-     * Must be copy asignable.
-     *
-     * TODO: @todo Change to contain the final data used by peak.
-     */
-    struct peak_queue_node_data_s {
-        
-        peak_job_func job_func;
-        void *job_data;
-    };
     
     struct peak_unbound_fifo_queue_node_s {
         struct peak_unbound_fifo_queue_node_s *next;
         
-        struct peak_queue_node_data_s data;
+        struct peak_job_s job;
     };
     
     

@@ -28,10 +28,9 @@ static int peak_unbound_fifo_queue_node_clear(struct peak_unbound_fifo_queue_nod
     
     node->next = NULL;
     
-    node->data.job_func = NULL;
-    node->data.job_data = NULL;
+    int const return_code = peak_job_invalidate(&node->job);
     
-    return PEAK_SUCCESS;
+    return return_code;
 }
 
 
@@ -313,11 +312,12 @@ struct peak_unbound_fifo_queue_node_s* peak_mpmc_unbound_locked_fifo_queue_trypo
             
             /* Copy the data into the node to return.
              */
-            consume->data = new_last->data;
+            consume->job = new_last->job;
             
             /* TODO: @toto Set new_last->data to 0, NULL, or whatever.
              */
-            new_last->data.job_data = NULL;
+            int const ec = peak_job_invalidate(&new_last->job);
+            assert(PEAK_SUCCESS == ec);
         }
     }
     retval = amp_raw_mutex_unlock(&queue->consumer_mutex);

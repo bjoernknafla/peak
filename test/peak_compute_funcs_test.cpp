@@ -26,180 +26,111 @@
 #include <peak/peak_internal_dependency.h>
 
 
-
+/*
 namespace 
 {
+  */  
     
     
-    
-    typedef int32_t peak_compute_unit_id_t;
-    typedef int32_t peak_compute_group_id_t;
-    
-    struct peak_job_s;
-    struct peak_job_vtbl_s;
-    struct peak_job_stats_s;
-    struct peak_compute_unit_job_context_data_s;
-    struct peak_compute_unit_job_context_functions_s;
-    struct peak_compute_unit_s;
-    struct peak_compute_group_s;
-    
-    typedef int (*peak_job_execute_in_context_func_t)(struct peak_job_s const* job,
-                                                      struct peak_compute_unit_s* execution_unit);
-    typedef int (*peak_job_complete_func_t)(struct peak_job_s const* job);
-    
-    typedef void (*peak_minimal_job_func_t)(void* user_context);
-    typedef void (*peak_unit_context_aware_job_func_t)(void* user_context, 
-                                                       struct peak_compute_unit_job_context_data_s*,
-                                                       struct peak_compute_unit_job_context_functions_s*
-                                                       );
-    typedef void (*peak_workload_job_func_t)(void* user_context, 
-                                             struct peak_compute_unit_job_context_data_s*,
-                                             struct peak_compute_unit_job_context_functions_s*,
-                                             void* workload_context);
-    
-    
-    struct peak_job_vtbl_s {
-        
-        // peak_job_check_cancellation_func_t check_cancellation;
-        peak_job_execute_in_context_func_t execute_in_context;
-        peak_job_complete_func_t complete;
-        
-    };
-    
-    
-    struct peak_job_stats_s {
-        // enqueuement time stamp
-        // tag
-        // source unit
-        // source group
-        // source tag
-    };
-    
-    // TODO: @todo Add check that this is 64Byte or as big as actual cache line.
-    // TODO: @todo Add a dependency or other data-partition field to enable simple data-parallel jobs.
-    struct peak_job_s {
-        
-        
-        struct peak_job_vtbl_s* vtbl;
-        
-        
-        // See type field. // peak_job_kickstart_func_t job_kickstart_func; // Kickstart function is able to care of sync jobs, group jobs, tagged jobs, stats measuring jobs, etc.
-        union {
-            peak_minimal_job_func_t minimal_job_func; // User supplied job function. A job-registry and job-function index for device driven compute units.
-            peak_unit_context_aware_job_func_t unit_context_job_func;
-        } job_func;
-        
-        void* job_context; // User supplied data for job. An index or device pointer for device driven compute units.
-        
-        union {
-            peak_dependency_t completion_dependency; // A job can belong to a job group that enqueues a continuity job when all jobs of the group have finished.
-            amp_raw_semaphore_t job_sync_call_sema; // Enqueuer of job blocks while waiting on job to finish. If a job caller blocks and the job belongs to a group the blocking caller stores and manages the group for the job.
-            // peak_job_cancle_group* job_cancel_group;
-        } job_group;
-        
-        struct peak_job_stats_s* stats;
-        
-            
+typedef int32_t peak_compute_unit_id_t;
+typedef int32_t peak_compute_group_id_t;
 
-    };
+
+struct peak_compute_unit_job_context_data_s {
+    
+};
+
+
+struct peak_compute_unit_job_context_functions_s {
+    
+    // struct peak_compute_unit_allocator_s* allocator;
+    // peak_aligned_alloc_func_t alloc_func;
+    // peak_aligned_dealloc_func_t dealloc_func;
+    
+    // peak_dispatch_main_async_func_t dispatch_main_async_func;
+    // peak_dispatch_global_async_func_t dispatch_global_async_func;
+    // peak_dispatch_group_async_func_t dispatch_group_async_func;
+    // peak_dispatch_compute_unit_async_func_t dispatch_compute_unit_async_func;
     
     
+    // Opaque data
+    
+};
+
+
+
+struct peak_compute_unit_s {
+    
+    
+    
+    // int main_thread_flag; // This is the compute unit data of the main thread.
+    // int lead_compute_unit_flag; // A lead thread has full core support an belongs into a group of co-threads (SMT).
+    // affinity_tag_t affinity_tag; // Thread is bound to an affinity.
+    
+    // work_stealing_queue;
+    // compute_unit_affinity_queue;
+    // compute_group_affinity_queue;
+    // global_queue;
+    // main_queue;
+    
+    // struct peak_mpmc_unbound_locked_fifo_queue_s* queue;
+    
+    struct peak_compute_unit_job_context_functions_s* job_context_funcs;
+    struct peak_compute_unit_job_context_data_s job_context_data;
+    
+    
+    struct peak_compute_group_s* group;
+    
+    struct amp_raw_thread_s* thread; // Contains platform thread and thread function.
+    
+    peak_compute_unit_id_t id;
+};
+
+
+struct peak_compute_group_s {
+    
+    
+    
+    // int main_thread_flag; // Contains compute unit representing main thread.
+    // int lead_compute_group_flag;
+    
+    
+    struct peak_mpmc_unbound_locked_fifo_queue_s* group_queue;
+    
+    
+    struct peak_compute_unit_s* compute_units;
+    size_t compute_unit_count; // Same or one less than total threads count. One less because one compute unit might be associated with the main thread. Unclear how to handle a thread_group in combination with the main thread...
+    
+    // struct peak_compute_platform_s* compute_platform; // Single compute platform.
+    
+    
+    amp_thread_group_t threads;
+    
+    peak_compute_group_id_t id;
+};
+
+/*
+ struct peak_compute_platform_s {
+ 
+ struct peak_mpmc_unbound_locked_fifo_queue_s* global_queue; // Global or default queue
+ 
+ struct peak_mpmc_unbound_locked_fifo_queue_s* main_thread_queue; // For main thread
+ 
+ 
+ struct peak_compute_group_s* first_level_compute_groups;
+ size_t first_level_compute_group_count;
+ 
+ struct peak_compute_unit_s* main_thread_compute_unit;
+ 
+ };
+ */
+
+/* } // anonymous namespace */
     
 
-    
-    
-    
-    // struct peak_job_cancel_group_s // Enables cancellation of jobs and also offer job finish group service.
-    
-    
-    struct peak_compute_unit_job_context_data_s {
-        
-    };
-    
-    
-    struct peak_compute_unit_job_context_functions_s {
-      
-        // struct peak_compute_unit_allocator_s* allocator;
-        // peak_aligned_alloc_func_t alloc_func;
-        // peak_aligned_dealloc_func_t dealloc_func;
-        
-        // peak_dispatch_main_async_func_t dispatch_main_async_func;
-        // peak_dispatch_global_async_func_t dispatch_global_async_func;
-        // peak_dispatch_group_async_func_t dispatch_group_async_func;
-        // peak_dispatch_compute_unit_async_func_t dispatch_compute_unit_async_func;
-        
-        
-        // Opaque data
-        
-    };
-    
-    
-    
-    struct peak_compute_unit_s {
-      
-        
-        
-        // int main_thread_flag; // This is the compute unit data of the main thread.
-        // int lead_compute_unit_flag; // A lead thread has full core support an belongs into a group of co-threads (SMT).
-        // affinity_tag_t affinity_tag; // Thread is bound to an affinity.
-        
-        // work_stealing_queue;
-        // compute_unit_affinity_queue;
-        // compute_group_affinity_queue;
-        // global_queue;
-        // main_queue;
-        
-        struct peak_compute_unit_job_context_functions_s* job_context_funcs;
-        struct peak_compute_unit_job_context_data_s job_context_data;
-        
-        
-        struct peak_compute_group_s* group;
-        
-        struct amp_raw_thread_s* thread; // Contains platform thread and thread function.
-        
-        peak_compute_unit_id_t id;
-    };
-    
-    
-    struct peak_compute_group_s {
-      
-        
-        
-        // int main_thread_flag; // Contains compute unit representing main thread.
-        // int lead_compute_group_flag;
-        
-        
-        struct peak_mpmc_unbound_locked_fifo_queue_s* group_queue;
-        
-        
-        struct peak_thread_context_s* compute_units;
-        size_t compute_unit_count; // Same or one less than threads count. One less because one compute unit might be associated with the main thread.
-        
-        // struct peak_compute_platform_s* compute_platform; // Single compute platform.
-        
-        
-        amp_thread_group_t threads;
-        
-        peak_compute_group_id_t id;
-    };
-    
-    /*
-    struct peak_compute_platform_s {
-      
-        struct peak_mpmc_unbound_locked_fifo_queue_s* global_queue; // Global or default queue
-        
-        struct peak_mpmc_unbound_locked_fifo_queue_s* main_thread_queue; // For main thread
-        
-        
-        struct peak_compute_group_s* first_level_compute_groups;
-        size_t first_level_compute_group_count;
-        
-        struct peak_compute_unit_s* main_thread_compute_unit;
-        
-    };
-     */
-    
-    
+
+namespace {
+
     int peak_job_execute_in_minimal_context(struct peak_job_s const* job,
                                             struct peak_compute_unit_s* execution_unit);
     int peak_job_execute_in_minimal_context(struct peak_job_s const* job,
@@ -225,7 +156,7 @@ namespace
         // the group completion notification.
         int return_code = PEAK_SUCCESS;
         
-        amp_raw_semaphore_t job_sync_call_sema = job->job_group.job_sync_call_sema;
+        amp_raw_semaphore_t job_sync_call_sema = job->job_completion.job_sync_call_sema;
         assert(NULL != job_sync_call_sema);
         
         int const errc = amp_raw_semaphore_signal(job_sync_call_sema);
@@ -242,7 +173,7 @@ namespace
     {
         int return_code = PEAK_SUCCESS;
         
-        peak_dependency_t completion_dependency = job->job_group.completion_dependency;
+        peak_dependency_t completion_dependency = job->job_completion.completion_dependency;
         assert(NULL != completion_dependency);
         
         return_code = peak_dependency_decrease(completion_dependency);
@@ -274,10 +205,31 @@ namespace
     
     
     
-    
+    int peak_compute_unit_drain_one(struct peak_compute_unit_s* unit);
+    int peak_compute_unit_drain_one(struct peak_compute_unit_s* unit)
+    {
+        assert(NULL != unit);
+        assert(NULL != unit->group);
+        assert(NULL != unit->group->group_queue);
+        
+        int return_code = PEAK_SUCCESS;
+        
+        struct peak_mpmc_unbound_locked_fifo_queue_s* queue = unit->group->group_queue;
+        struct peak_unbound_fifo_queue_node_s* node = peak_mpmc_unbound_locked_fifo_queue_trypop(queue);
+        
+        
+        if (NULL != node) {
+            
+            return_code = peak_job_execute(&node->job, unit);
+        }
+        
+        return return_code;
+    }
+
 } // anonymous namespace
     
-    
+
+
 SUITE(peak_compute_funcs_test)
 {
     
@@ -335,7 +287,7 @@ SUITE(peak_compute_funcs_test)
         job.vtbl = &vtbl;
         job.job_func.minimal_job_func = &execute_one_minimal_job_func;
         job.job_context = &job_context;
-        job.job_group.completion_dependency = NULL;
+        job.job_completion.completion_dependency = NULL;
         job.stats = NULL;
         
         int const errc = peak_job_execute(&job,
@@ -369,7 +321,7 @@ SUITE(peak_compute_funcs_test)
         job.vtbl = &vtbl;
         job.job_func.minimal_job_func = &execute_one_minimal_job_func;
         job.job_context = &job_context;
-        job.job_group.job_sync_call_sema = &sync_sema;
+        job.job_completion.job_sync_call_sema = &sync_sema;
         job.stats = NULL;
         
         errc = peak_job_execute(&job,
@@ -413,7 +365,7 @@ SUITE(peak_compute_funcs_test)
         job.vtbl = &vtbl;
         job.job_func.minimal_job_func = &execute_one_minimal_job_func;
         job.job_context = &job_context;
-        job.job_group.completion_dependency = dependency;
+        job.job_completion.completion_dependency = dependency;
         job.stats = NULL;
         
         errc = peak_dependency_increase(dependency);
@@ -439,6 +391,65 @@ SUITE(peak_compute_funcs_test)
     
     
     
+    TEST(enqueue_minimal_job_without_notifaction_and_drain_it)
+    {
+        struct peak_job_vtbl_s vtbl;
+        vtbl.execute_in_context = &peak_job_execute_in_minimal_context;
+        vtbl.complete = &peak_job_complete_without_notifaction;
+        
+        int const expected_job_result = 42;
+        
+        struct execute_one_minimal_job_func_context_s job_context;
+        job_context.operand0 = 40;
+        job_context.operand1 = 2;
+        job_context.result = 0;
+        
+        struct peak_job_s job;
+        job.vtbl = &vtbl;
+        job.job_func.minimal_job_func = &execute_one_minimal_job_func;
+        job.job_context = &job_context;
+        job.job_completion.completion_dependency = NULL;
+        job.stats = NULL;
+        
+        
+        struct peak_unbound_fifo_queue_node_s sentry_node = {NULL, { NULL, {NULL}, NULL, {NULL}, NULL}};
+        struct peak_unbound_fifo_queue_node_s job_node = {NULL, job};
+
+        struct peak_mpmc_unbound_locked_fifo_queue_s queue;        
+        int errc = peak_mpmc_unbound_locked_fifo_queue_init(&queue, 
+                                                            &sentry_node);
+        assert(PEAK_SUCCESS == errc);
+        
+        struct peak_compute_unit_s compute_unit;
+        struct peak_compute_group_s compute_group;
+        compute_group.group_queue = &queue;
+        compute_group.compute_units = &compute_unit;
+        compute_group.compute_unit_count = 1;
+        compute_group.threads = NULL;
+        compute_group.id = 0;
+        
+        compute_unit.job_context_funcs = NULL;
+        // compute_unit.job_context_data;
+        compute_unit.group = &compute_group;
+        compute_unit.thread = NULL;
+        compute_unit.id = 1;
+        
+        errc = peak_mpmc_unbound_locked_fifo_queue_push(&queue,
+                                                        &job_node);
+        assert(PEAK_SUCCESS == errc);
+        
+        errc = peak_compute_unit_drain_one(&compute_unit);
+        assert(PEAK_SUCCESS == errc);
+        
+        
+        struct peak_unbound_fifo_queue_node_s* dummy_node = NULL;
+        errc = peak_mpmc_unbound_locked_fifo_queue_finalize(&queue,
+                                                            &dummy_node);
+        assert(PEAK_SUCCESS == errc);
+        
+        CHECK_EQUAL(expected_job_result, job_context.result);
+        
+    }
     
 } // SUITE(peak_compute_funcs_test)
 

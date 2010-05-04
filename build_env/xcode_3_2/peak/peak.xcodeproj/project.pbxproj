@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		320919BF119020AD00779B37 /* peak_job.h in Headers */ = {isa = PBXBuildFile; fileRef = 320919BD119020AD00779B37 /* peak_job.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		320919C0119020AD00779B37 /* peak_job.c in Sources */ = {isa = PBXBuildFile; fileRef = 320919BE119020AD00779B37 /* peak_job.c */; };
 		321E22B9108CA41F0080BFE6 /* libUnitTest++.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 321E22B8108CA41F0080BFE6 /* libUnitTest++.a */; };
 		321E22C9108CA4BE0080BFE6 /* unit_tests_main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 321E22A5108CA2A40080BFE6 /* unit_tests_main.cpp */; };
 		321E4387108DBD160080BFE6 /* peak_data_alignment_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 321E4386108DBD160080BFE6 /* peak_data_alignment_test.cpp */; };
@@ -124,6 +126,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		320919BD119020AD00779B37 /* peak_job.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_job.h; sourceTree = "<group>"; };
+		320919BE119020AD00779B37 /* peak_job.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = peak_job.c; sourceTree = "<group>"; };
 		321E229D108C9A450080BFE6 /* COPYRIGHT.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = COPYRIGHT.txt; path = ../../../COPYRIGHT.txt; sourceTree = SOURCE_ROOT; };
 		321E229F108C9A450080BFE6 /* README.markdown */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.markdown; path = ../../../README.markdown; sourceTree = SOURCE_ROOT; };
 		321E22A5108CA2A40080BFE6 /* unit_tests_main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = unit_tests_main.cpp; sourceTree = "<group>"; };
@@ -304,6 +308,8 @@
 				32F2EDC7118C356500A0B9D7 /* peak_raw_dependency.h */,
 				32F2739B1181EA9A002CEA45 /* peak_internal_dependency.h */,
 				32F273981181EA05002CEA45 /* peak_dependency.c */,
+				320919BD119020AD00779B37 /* peak_job.h */,
+				320919BE119020AD00779B37 /* peak_job.c */,
 			);
 			path = peak;
 			sourceTree = "<group>";
@@ -391,6 +397,7 @@
 				32F273991181EA05002CEA45 /* peak_dependency.h in Headers */,
 				32F2739D1181EA9A002CEA45 /* peak_internal_dependency.h in Headers */,
 				32F2EDC9118C356500A0B9D7 /* peak_raw_dependency.h in Headers */,
+				320919BF119020AD00779B37 /* peak_job.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -579,6 +586,7 @@
 				32D38BD1117C9D8A00D03C80 /* peak_memory.c in Sources */,
 				32D38BD3117C9D8B00D03C80 /* peak_data_alignment.c in Sources */,
 				32F2739A1181EA05002CEA45 /* peak_dependency.c in Sources */,
+				320919C0119020AD00779B37 /* peak_job.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
