@@ -28,6 +28,7 @@
 		32D38BD1117C9D8A00D03C80 /* peak_memory.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C1872E10A08F54001852EE /* peak_memory.c */; };
 		32D38BD2117C9D8B00D03C80 /* peak_data_alignment.h in Headers */ = {isa = PBXBuildFile; fileRef = 32C1874F10A0991C001852EE /* peak_data_alignment.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		32D38BD3117C9D8B00D03C80 /* peak_data_alignment.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C1875010A0991C001852EE /* peak_data_alignment.c */; };
+		32D7834D1193011E005B5941 /* peak_workload_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 32D7834C1193011E005B5941 /* peak_workload_test.cpp */; };
 		32DE7671117F8A5B003CA916 /* amp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 32D38B57117C8ACD00D03C80 /* amp.framework */; };
 		32DE7683117F8A5F003CA916 /* kaizen.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 32D38B59117C8ACD00D03C80 /* kaizen.framework */; };
 		32F273961181E9F6002CEA45 /* peak_dependency_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 32F273951181E9F6002CEA45 /* peak_dependency_test.cpp */; };
@@ -165,6 +166,7 @@
 		32D38B57117C8ACD00D03C80 /* amp.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = amp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		32D38B59117C8ACD00D03C80 /* kaizen.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = kaizen.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		32D38B5B117C8ACD00D03C80 /* poc.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = poc.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		32D7834C1193011E005B5941 /* peak_workload_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_workload_test.cpp; sourceTree = "<group>"; };
 		32DE7692117F8AB5003CA916 /* kaizen.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = kaizen.xcodeproj; path = ../../../../kaizen/build_env/xcode_3_2/kaizen/kaizen.xcodeproj; sourceTree = SOURCE_ROOT; };
 		32DE76A0117F8AEA003CA916 /* kaizen.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = kaizen.xcconfig; sourceTree = "<group>"; };
 		32F273951181E9F6002CEA45 /* peak_dependency_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_dependency_test.cpp; sourceTree = "<group>"; };
@@ -325,6 +327,7 @@
 				326776E910A19CD800CC7576 /* peak_mpmc_unbound_locked_fifo_queue_test.cpp */,
 				32F273951181E9F6002CEA45 /* peak_dependency_test.cpp */,
 				3224E8E510B2D5D10051F7D0 /* peak_compute_funcs_test.cpp */,
+				32D7834C1193011E005B5941 /* peak_workload_test.cpp */,
 			);
 			name = test;
 			path = ../../../test;
@@ -574,6 +577,7 @@
 				326776EA10A19CD800CC7576 /* peak_mpmc_unbound_locked_fifo_queue_test.cpp in Sources */,
 				32F273961181E9F6002CEA45 /* peak_dependency_test.cpp in Sources */,
 				32F2EDF2118CC55500A0B9D7 /* peak_compute_funcs_test.cpp in Sources */,
+				32D7834D1193011E005B5941 /* peak_workload_test.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

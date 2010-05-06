@@ -76,7 +76,7 @@ struct peak_compute_unit_s {
     // struct peak_mpmc_unbound_locked_fifo_queue_s* queue;
     
     struct peak_compute_unit_job_context_functions_s* job_context_funcs;
-    struct peak_compute_unit_job_context_data_s job_context_data;
+    struct peak_compute_unit_job_context_data_s* job_context_data;
     
     
     struct peak_compute_group_s* group;
@@ -84,13 +84,23 @@ struct peak_compute_unit_s {
     struct amp_raw_thread_s* thread; // Contains platform thread and thread function.
     
     peak_compute_unit_id_t id;
+    
+    struct amp_raw_mutex_s running_mutex;
+    unsigned int running_flag;
+};
+
+
+struct peak_compute_group_unit_control_s {
+    struct amp_raw_mutex_s control_mutex;
+    struct amp_raw_condition_variable_s wake_up_condition;
+    
+    unsigned int active_unit_count;
+    unsigned int target_active_unit_count;
+    int running_flag;
 };
 
 
 struct peak_compute_group_s {
-    
-    
-    
     // int main_thread_flag; // Contains compute unit representing main thread.
     // int lead_compute_group_flag;
     
@@ -101,6 +111,8 @@ struct peak_compute_group_s {
     void* allocator_context;
     peak_alloc_func_t alloc_func;
     peak_dealloc_func_t dealloc_func;
+    
+    struct peak_compute_group_unit_control_s unit_control;
     
     struct peak_compute_unit_s* compute_units;
     size_t compute_unit_count; // Same or one less than total threads count. One less because one compute unit might be associated with the main thread. Unclear how to handle a thread_group in combination with the main thread...
@@ -135,6 +147,15 @@ struct peak_compute_group_s {
 
 namespace {
 
+    int peak_internal_control_job_execute(struct peak_job_s const* job,
+                                          struct peak_compute_unit_s* execution_unit);
+    int peak_internal_control_job_execute(struct peak_job_s const* job,
+                                          struct peak_compute_unit_s* execution_unit)
+    {
+        return job->job_func.internal_control_job_func(job->job_context, execution_unit);
+    }
+    
+    
     int peak_job_execute_in_minimal_context(struct peak_job_s const* job,
                                             struct peak_compute_unit_s* execution_unit);
     int peak_job_execute_in_minimal_context(struct peak_job_s const* job,
@@ -143,6 +164,18 @@ namespace {
         (void)execution_unit;
         job->job_func.minimal_job_func(job->job_context);
         return PEAK_SUCCESS;
+    }
+    
+    
+    int peak_job_execute_with_unit_context(struct peak_job_s const* job,
+                                           struct peak_compute_unit_s* execution_unit);
+    int peak_job_execute_with_unit_context(struct peak_job_s const* job,
+                                           struct peak_compute_unit_s* execution_unit)
+    {
+        (void)execution_unit;
+        return job->job_func.unit_context_job_func(job->job_context, 
+                                                   execution_unit->job_context_data,
+                                                   execution_unit->job_context_funcs);
     }
     
     
@@ -782,6 +815,176 @@ SUITE(peak_compute_funcs_test)
         
     }
     
+    
+    
+    namespace {
+        
+        class mutex_lock_guard {
+        public:
+            mutex_lock_guard(amp_raw_mutex_s& m)
+            :   mutex_(m)
+            {
+                int retval = amp_raw_mutex_lock(&mutex_);
+                assert(AMP_SUCCESS == retval);
+            }
+            
+            ~mutex_lock_guard()
+            {
+                int retval = amp_raw_mutex_unlock(&mutex_);
+                assert(AMP_SUCCESS == retval);
+            }
+            
+        private:
+            amp_raw_mutex_s& mutex_;
+        };
+        
+        
+        class test_allocator {
+        public:
+            
+            test_allocator()
+            :   alloc_count_mutex_(NULL)
+            ,   dealloc_count_mutex_(NULL)
+            ,   alloc_count_(0)
+            ,   dealloc_count_(0)
+            {
+                alloc_count_mutex_ = new amp_raw_mutex_s;
+                assert(NULL != alloc_count_mutex_);
+                
+                int retval = amp_raw_mutex_init(alloc_count_mutex_);
+                assert(AMP_SUCCESS == retval);
+                
+                
+                dealloc_count_mutex_ = new amp_raw_mutex_s;
+                assert(NULL != dealloc_count_mutex_);
+                
+                retval = amp_raw_mutex_init(dealloc_count_mutex_);
+                assert(AMP_SUCCESS == retval);
+            }
+            
+            ~test_allocator()
+            {
+                int retval = amp_raw_mutex_finalize(alloc_count_mutex_);
+                assert(AMP_SUCCESS == retval);
+                
+                retval = amp_raw_mutex_finalize(dealloc_count_mutex_);
+                assert(AMP_SUCCESS == retval);
+                
+                delete alloc_count_mutex_;
+                delete dealloc_count_mutex_;
+            }
+            
+            
+            void increase_alloc_count()
+            {
+                mutex_lock_guard lock(*alloc_count_mutex_);
+                
+                assert(SIZE_MAX != alloc_count_);
+                
+                ++alloc_count_;
+            }
+            
+            
+            void increase_dealloc_count()
+            {
+                mutex_lock_guard lock(*dealloc_count_mutex_);
+                
+                assert(SIZE_MAX != dealloc_count_);
+                
+                ++dealloc_count_;
+            }
+            
+            
+            size_t alloc_count() const
+            {
+                mutex_lock_guard lock(*alloc_count_mutex_);
+                return alloc_count_;
+            }
+            
+            size_t dealloc_count() const
+            {
+                mutex_lock_guard lock(*dealloc_count_mutex_);
+                return dealloc_count_;
+            }
+            
+        private:
+            test_allocator(test_allocator const&); // =delete
+            test_allocator& operator=(test_allocator const&);// =delete
+        private:
+            
+            struct amp_raw_mutex_s *alloc_count_mutex_;
+            struct amp_raw_mutex_s *dealloc_count_mutex_;
+            size_t alloc_count_;
+            size_t dealloc_count_;
+            
+        };
+        
+        
+        void* test_alloc(void *allocator_context, size_t size_in_bytes)
+        {
+            test_allocator *allocator = (test_allocator *)allocator_context;
+            
+            void* retval = peak_malloc(NULL, size_in_bytes);
+            assert(NULL != retval);
+            
+            allocator->increase_alloc_count();
+            
+            
+            return retval;
+        }
+        
+        
+        void test_dealloc(void *allocator_context, void *pointer)
+        {
+            test_allocator *allocator = (test_allocator *)allocator_context;
+            
+            peak_free(NULL, pointer);
+            
+            allocator->increase_dealloc_count();
+        }
+        
+        
+    } // anonymous namespace
+    
+    
+    
+    TEST(sequential_schedule_workload)
+    {
+        /*
+        int errc = peak_workload_adapt(&group_workload, 
+                                       &unit_workload,
+                                       allocator_context,
+                                       test_alloc,
+                                       test_dealloc);
+        assert(PEAK_SUCCESS == errc);
+        assert(NULL != unit_workload);
+        
+        // Run empty.
+        errc = peak_compute_unit_drain_workload(&unit,
+                                                unit_workload);
+        assert(PEAK_SUCCESS == errc);
+        
+        errc = peak_compute_unit_dispatch_workload_async(&unit,
+                                                         &group_workload,
+                                                         &workload_job_context,
+                                                         &workload_job_func);
+        assert(PEAK_SUCCESS == errc);
+        
+                                            
+        // Run with one workload job.
+        errc = peak_compute_unit_drain_workload(&unit,
+                                                unit_workload);
+        // Check that the workload is done.
+        // Check that the job exectuted.
+        
+        errc = peak_workload_repel_workload(&group_workload,
+                                            unit_workload,
+                                            allocator_context,
+                                            test_alloc,
+                                            test_dealloc);
+        assert(PEAK_SUCCESS == errc);
+         */
+    }
     
     
 } // SUITE(peak_compute_funcs_test)

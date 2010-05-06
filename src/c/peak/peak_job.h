@@ -49,6 +49,15 @@ extern "C" {
     typedef int (*peak_job_complete_func_t)(struct peak_job_s const* job);
     
     /**
+     * Internal job type emitted by peak control functions to enable
+     * addition of workload contexts to compute groups and units, or to 
+     * synchronize waiting for all compute units to finish their work for the
+     * current frame.
+     */
+    typedef int (*peak_internal_control_job_func)(void* user_context,
+                                                  struct peak_compute_unit_s* unit);
+    
+    /**
      * User job type that only takes the user supplied job context.
      */
     typedef void (*peak_minimal_job_func_t)(void* user_context);
@@ -59,20 +68,20 @@ extern "C" {
      * into the compute unit local queue, or to allocate and free memory via
      * the compute unit local allocator context.
      */
-    typedef void (*peak_unit_context_aware_job_func_t)(void* user_context, 
-                                                       struct peak_compute_unit_job_context_data_s*,
-                                                       struct peak_compute_unit_job_context_functions_s*
-                                                       );
+    typedef int (*peak_unit_context_aware_job_func_t)(void* user_context, 
+                                                      struct peak_compute_unit_job_context_data_s*,
+                                                      struct peak_compute_unit_job_context_functions_s*
+                                                      );
     
     /**
      * User job type that takes the user supplied job context, a workload 
      * context (describing a whole group of belonging jobs, and is also
      * aware of the executing compute unit context.
      */
-    typedef void (*peak_workload_job_func_t)(void* user_context, 
-                                             struct peak_compute_unit_job_context_data_s*,
-                                             struct peak_compute_unit_job_context_functions_s*,
-                                             void* workload_context);
+    typedef int (*peak_workload_job_func_t)(void* user_context, 
+                                            struct peak_compute_unit_job_context_data_s*,
+                                            struct peak_compute_unit_job_context_functions_s*,
+                                            void* workload_context);
     
     /**
      *
@@ -144,6 +153,7 @@ extern "C" {
              * TODO: @todo Use a job-registry and job-function index for device 
              *             driven compute units.
              */
+            peak_internal_control_job_func internal_control_job_func;
             peak_minimal_job_func_t minimal_job_func; 
             peak_unit_context_aware_job_func_t unit_context_job_func;
         } job_func;
