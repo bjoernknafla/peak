@@ -142,6 +142,7 @@
 		321E4386108DBD160080BFE6 /* peak_data_alignment_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_data_alignment_test.cpp; sourceTree = "<group>"; };
 		321E440A108F49570080BFE6 /* error_and_exception_handling.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = error_and_exception_handling.txt; sourceTree = "<group>"; };
 		3224E8E510B2D5D10051F7D0 /* peak_compute_funcs_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_compute_funcs_test.cpp; sourceTree = "<group>"; };
+		324435941195E007003D032C /* test_allocator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = test_allocator.h; sourceTree = "<group>"; };
 		326776E110A19A8900CC7576 /* pmem_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = pmem_test.cpp; sourceTree = "<group>"; };
 		326776E510A19B5400CC7576 /* peak_stdint.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_stdint.cpp; sourceTree = "<group>"; };
 		326776E910A19CD800CC7576 /* peak_mpmc_unbound_locked_fifo_queue_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_mpmc_unbound_locked_fifo_queue_test.cpp; sourceTree = "<group>"; };
@@ -319,6 +320,7 @@
 		321E22A4108C9A450080BFE6 /* test */ = {
 			isa = PBXGroup;
 			children = (
+				324435941195E007003D032C /* test_allocator.h */,
 				321E22A5108CA2A40080BFE6 /* unit_tests_main.cpp */,
 				321E22A6108CA2A40080BFE6 /* experiment_test.cpp */,
 				321E4386108DBD160080BFE6 /* peak_data_alignment_test.cpp */,

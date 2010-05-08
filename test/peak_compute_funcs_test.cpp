@@ -10,6 +10,8 @@
 
 #include <UnitTest++.h>
 
+#include "test_allocator.h"
+
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
@@ -814,138 +816,6 @@ SUITE(peak_compute_funcs_test)
         CHECK_EQUAL(expected_job_result, job_context.result);
         
     }
-    
-    
-    
-    namespace {
-        
-        class mutex_lock_guard {
-        public:
-            mutex_lock_guard(amp_raw_mutex_s& m)
-            :   mutex_(m)
-            {
-                int retval = amp_raw_mutex_lock(&mutex_);
-                assert(AMP_SUCCESS == retval);
-            }
-            
-            ~mutex_lock_guard()
-            {
-                int retval = amp_raw_mutex_unlock(&mutex_);
-                assert(AMP_SUCCESS == retval);
-            }
-            
-        private:
-            amp_raw_mutex_s& mutex_;
-        };
-        
-        
-        class test_allocator {
-        public:
-            
-            test_allocator()
-            :   alloc_count_mutex_(NULL)
-            ,   dealloc_count_mutex_(NULL)
-            ,   alloc_count_(0)
-            ,   dealloc_count_(0)
-            {
-                alloc_count_mutex_ = new amp_raw_mutex_s;
-                assert(NULL != alloc_count_mutex_);
-                
-                int retval = amp_raw_mutex_init(alloc_count_mutex_);
-                assert(AMP_SUCCESS == retval);
-                
-                
-                dealloc_count_mutex_ = new amp_raw_mutex_s;
-                assert(NULL != dealloc_count_mutex_);
-                
-                retval = amp_raw_mutex_init(dealloc_count_mutex_);
-                assert(AMP_SUCCESS == retval);
-            }
-            
-            ~test_allocator()
-            {
-                int retval = amp_raw_mutex_finalize(alloc_count_mutex_);
-                assert(AMP_SUCCESS == retval);
-                
-                retval = amp_raw_mutex_finalize(dealloc_count_mutex_);
-                assert(AMP_SUCCESS == retval);
-                
-                delete alloc_count_mutex_;
-                delete dealloc_count_mutex_;
-            }
-            
-            
-            void increase_alloc_count()
-            {
-                mutex_lock_guard lock(*alloc_count_mutex_);
-                
-                assert(SIZE_MAX != alloc_count_);
-                
-                ++alloc_count_;
-            }
-            
-            
-            void increase_dealloc_count()
-            {
-                mutex_lock_guard lock(*dealloc_count_mutex_);
-                
-                assert(SIZE_MAX != dealloc_count_);
-                
-                ++dealloc_count_;
-            }
-            
-            
-            size_t alloc_count() const
-            {
-                mutex_lock_guard lock(*alloc_count_mutex_);
-                return alloc_count_;
-            }
-            
-            size_t dealloc_count() const
-            {
-                mutex_lock_guard lock(*dealloc_count_mutex_);
-                return dealloc_count_;
-            }
-            
-        private:
-            test_allocator(test_allocator const&); // =delete
-            test_allocator& operator=(test_allocator const&);// =delete
-        private:
-            
-            struct amp_raw_mutex_s *alloc_count_mutex_;
-            struct amp_raw_mutex_s *dealloc_count_mutex_;
-            size_t alloc_count_;
-            size_t dealloc_count_;
-            
-        };
-        
-        
-        void* test_alloc(void *allocator_context, size_t size_in_bytes)
-        {
-            test_allocator *allocator = (test_allocator *)allocator_context;
-            
-            void* retval = peak_malloc(NULL, size_in_bytes);
-            assert(NULL != retval);
-            
-            allocator->increase_alloc_count();
-            
-            
-            return retval;
-        }
-        
-        
-        void test_dealloc(void *allocator_context, void *pointer)
-        {
-            test_allocator *allocator = (test_allocator *)allocator_context;
-            
-            peak_free(NULL, pointer);
-            
-            allocator->increase_dealloc_count();
-        }
-        
-        
-    } // anonymous namespace
-    
     
     
     TEST(sequential_schedule_workload)
