@@ -256,48 +256,54 @@ int peak_scheduler_get_workload(peak_scheduler_t scheduler,
  * if it does not find the key. Otherwise the index points to the 
  * workload that is the key or which has a parent (recursive search) that 
  * equals the key.
+ *
+ * TODO: @todo Only finds the first occurence - change that?
  */
 int peak_internal_find_key_in_workloads(peak_workload_t key,
                                         peak_workload_t* workloads,
                                         size_t const workload_count,
-                                        size_t* index);
+                                        size_t start_index,
+                                        size_t* key_found_index);
 int peak_internal_find_key_in_workloads(peak_workload_t key,
                                         peak_workload_t* workloads,
                                         size_t const workload_count,
-                                        size_t* index)
+                                        size_t start_index,
+                                        size_t* key_found_index)
 {
     assert(NULL != key);
     assert(NULL != workloads);
-    assert(NULL != index);
+    assert(start_index < workload_count);
+    assert(NULL != key_found_index);
     
     if (NULL == key
         || NULL == workloads
-        || NULL == index) {
+        || start_index >= workload_count
+        || NULL == key_found_index) {
         
         return EINVAL;
     }
     
     /* First: fast breadth search */
-    for (size_t i = 0; i < workload_count; ++i) {
+    for (size_t i = start_index; i < workload_count; ++i) {
         
         peak_workload_t wl = workloads[i];
         
         if (wl == key 
             || wl->parent == key) {
             
-            *index = i;
+            *key_found_index = i;
             return PEAK_SUCCESS;
         }
     }
     
     /* Second: slow and intensive deapth search */
-    for (size_t i = 0; i < workload_count; ++i) {
+    for (size_t i = start_index; i < workload_count; ++i) {
         
         peak_workload_t wl = workloads[i]->parent;
         
         while (NULL != wl) {
             if (key == wl) {
-                *index = i;
+                *key_found_index = i;
                 return PEAK_SUCCESS;
             }
             
@@ -309,7 +315,10 @@ int peak_internal_find_key_in_workloads(peak_workload_t key,
 }
 
 
-/* Adds a workload to the workload container (does not adapt it). */
+/* Adds a workload to the workload container (does not adapt it). 
+ * TODO: @todo Detect if the workload is already contained and don't add it 
+ *             then? Or detect this in the scheduler add method?
+ */
 int peak_internal_push_to_workloads(peak_workload_t new_workload,
                                     size_t max_workload_count,
                                     peak_workload_t* workloads,
@@ -419,7 +428,8 @@ int peak_internal_remove_key_from_workloads(peak_workload_t key,
     size_t remove_index = max_workload_count;
     int errc = peak_internal_find_key_in_workloads(key, 
                                                    workloads, 
-                                                   *workload_count, 
+                                                   *workload_count,
+                                                   0,
                                                    &remove_index);
     if (PEAK_SUCCESS != errc
         || *workload_count <= remove_index
@@ -434,7 +444,11 @@ int peak_internal_remove_key_from_workloads(peak_workload_t key,
                                                      removed_workload);
 }
 
-
+/**
+ *
+ * Only workloads which aren't already contained (directly or via a workload
+ * that has the same direct or indirect parent) can be added.
+ */
 int peak_scheduler_adapt_and_add_workload(peak_scheduler_t scheduler,
                                           peak_workload_t parent_workload);
 int peak_scheduler_adapt_and_add_workload(peak_scheduler_t scheduler,
@@ -453,12 +467,27 @@ int peak_scheduler_adapt_and_add_workload(peak_scheduler_t scheduler,
         return ENOSPC;
     }
     
+    size_t found_index = PEAK_SCHEDULER_WORKLOAD_COUNT_MAX;
+    int return_code = peak_internal_find_key_in_workloads(parent_workload,
+                                                          scheduler->worklaods,
+                                                          scheduler->workload_count,
+                                                          0,
+                                                          found_index);
+    if (PEAK_SUCCESS == return_code
+        || found_index != PEAK_SCHEDULER_WORKLOAD_COUNT_MAX) {
+        
+        /* TODO: @todo Find and use a more fitting error message. */
+        return EEXIST;
+    }
+    
+    
+    
     peak_workload_t adapted_workload = NULL;
-    int return_code = parent_workload->vtbl->adapt_func(parent_workload,
-                                                        &adapted_workload,
-                                                        scheduler->scheduler_context.allocator_context,
-                                                        scheduler->scheduler_context.alloc_func,
-                                                        scheduler->scheduler_context.dealloc_func);
+    return_code = parent_workload->vtbl->adapt_func(parent_workload,
+                                                    &adapted_workload,
+                                                    scheduler->scheduler_context.allocator_context,
+                                                    scheduler->scheduler_context.alloc_func,
+                                                    scheduler->scheduler_context.dealloc_func);
     if (PEAK_SUCCESS == return_code) {
         
         return_code = peak_internal_push_to_workloads(adapted_workload,
@@ -561,7 +590,7 @@ int peak_scheduler_run_next_workload(peak_scheduler_t scheduler)
 SUITE(peak_workload)
 {
     
-    TEST_FIXTURE(queue_test_fixture, create_and_finalize_scheduler)
+    TEST_FIXTURE(allocator_test_fixture, create_and_finalize_scheduler)
     {
         struct peak_scheduler scheduler;
         
@@ -575,6 +604,7 @@ SUITE(peak_workload)
         errc = peak_scheduler_get_workload_count(&scheduler,
                                                  &workload_count);
         CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL((size_t)0, workload_count);
         
         errc = peak_scheduler_finalize(&scheduler,
                                        &test_allocator,
@@ -585,6 +615,230 @@ SUITE(peak_workload)
         CHECK_EQUAL(test_allocator.alloc_count(), 
                     test_allocator.dealloc_count());
     }
+    
+    
+    
+    TEST_FIXTURE(allocator_test_fixture, add_workload_to_scheduler_try_to_finalize_scheduler)
+    {
+        struct peak_scheduler scheduler;
+        
+        int errc = peak_scheduler_init(&scheduler,
+                                       &test_allocator,
+                                       &test_alloc,
+                                       &test_dealloc);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        
+        size_t workload_count = 0;
+        errc = peak_scheduler_get_workload_count(&scheduler,
+                                                 &workload_count);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL((size_t)0, workload_count);
+        
+        struct peak_workload workload;
+        
+        errc = peak_internal_push_to_workloads(&workload, 
+                                               PEAK_SCHEDULER_WORKLOAD_COUNT_MAX, 
+                                               scheduler.workloads, 
+                                               &scheduler.workload_count);
+        
+        workload_count = 0;
+        errc = peak_scheduler_get_workload_count(&scheduler,
+                                                 &workload_count);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL((size_t)1, workload_count);
+        
+        errc = peak_scheduler_finalize(&scheduler,
+                                       &test_allocator,
+                                       &test_alloc,
+                                       &test_dealloc);
+        CHECK_EQUAL(EBUSY, errc);
+        
+        workload_count = 0;
+        errc = peak_scheduler_get_workload_count(&scheduler,
+                                                 &workload_count);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL((size_t)1, workload_count);
+        
+        struct peak_workload* removed_workload;
+        errc = peak_internal_remove_key_from_workloads(&workload,
+                                                       PEAK_SCHEDULER_WORKLOAD_COUNT_MAX,
+                                                       scheduler.workloads,
+                                                       &scheduler.workload_count, 
+                                                       &removed_workload);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL(removed_workload, &workload);
+        
+        workload_count = 0;
+        errc = peak_scheduler_get_workload_count(&scheduler,
+                                                 &workload_count);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL((size_t)0, workload_count);
+        
+        errc = peak_scheduler_finalize(&scheduler,
+                                       &test_allocator,
+                                       &test_alloc,
+                                       &test_dealloc);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        
+        CHECK_EQUAL(test_allocator.alloc_count(), 
+                    test_allocator.dealloc_count());
+    }
+    
+    
+    
+    TEST_FIXTURE(allocator_test_fixture, add_workload_remove_add_to_scheduler)
+    {
+        struct peak_scheduler scheduler;
+        
+        int errc = peak_scheduler_init(&scheduler,
+                                       &test_allocator,
+                                       &test_alloc,
+                                       &test_dealloc);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        
+        size_t workload_count = 0;
+        errc = peak_scheduler_get_workload_count(&scheduler,
+                                                 &workload_count);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL((size_t)0, workload_count);
+        
+        // Add one workload
+        struct peak_workload workload_one;
+        errc = peak_internal_push_to_workloads(&workload_one, 
+                                               PEAK_SCHEDULER_WORKLOAD_COUNT_MAX, 
+                                               scheduler.workloads, 
+                                               &scheduler.workload_count);
+        
+        workload_count = 0;
+        errc = peak_scheduler_get_workload_count(&scheduler,
+                                                 &workload_count);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL((size_t)1, workload_count);
+        
+        // Remove workload
+        struct peak_workload* removed_workload_a;
+        errc = peak_internal_remove_key_from_workloads(&workload_one,
+                                                       PEAK_SCHEDULER_WORKLOAD_COUNT_MAX,
+                                                       scheduler.workloads,
+                                                       &scheduler.workload_count, 
+                                                       &removed_workload_a);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL(removed_workload_a, &workload_one);
+        
+        workload_count = 0;
+        errc = peak_scheduler_get_workload_count(&scheduler,
+                                                 &workload_count);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL((size_t)0, workload_count);
+        
+        
+        // Add new workload
+        struct peak_workload workload_two;
+        errc = peak_internal_push_to_workloads(&workload_two, 
+                                               PEAK_SCHEDULER_WORKLOAD_COUNT_MAX, 
+                                               scheduler.workloads, 
+                                               &scheduler.workload_count);
+        
+        workload_count = 0;
+        errc = peak_scheduler_get_workload_count(&scheduler,
+                                                 &workload_count);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL((size_t)1, workload_count);
+        
+        // Add next workload
+        struct peak_workload workload_three;
+        errc = peak_internal_push_to_workloads(&workload_three, 
+                                               PEAK_SCHEDULER_WORKLOAD_COUNT_MAX, 
+                                               scheduler.workloads, 
+                                               &scheduler.workload_count);
+        
+        workload_count = 0;
+        errc = peak_scheduler_get_workload_count(&scheduler,
+                                                 &workload_count);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL((size_t)2, workload_count);
+        
+        // Remove one workload
+        struct peak_workload* removed_workload_b;
+        errc = peak_internal_remove_key_from_workloads(&workload_three,
+                                                       PEAK_SCHEDULER_WORKLOAD_COUNT_MAX,
+                                                       scheduler.workloads,
+                                                       &scheduler.workload_count, 
+                                                       &removed_workload_b);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL(removed_workload_b, &workload_three);
+        
+        workload_count = 0;
+        errc = peak_scheduler_get_workload_count(&scheduler,
+                                                 &workload_count);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL((size_t)1, workload_count);
+        
+        // Add a workload
+        struct peak_workload workload_four;
+        errc = peak_internal_push_to_workloads(&workload_four, 
+                                               PEAK_SCHEDULER_WORKLOAD_COUNT_MAX, 
+                                               scheduler.workloads, 
+                                               &scheduler.workload_count);
+        
+        workload_count = 0;
+        errc = peak_scheduler_get_workload_count(&scheduler,
+                                                 &workload_count);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL((size_t)2, workload_count);
+        
+        // Remove all workloads
+        struct peak_workload* removed_workload_c;
+        errc = peak_internal_remove_key_from_workloads(&workload_four,
+                                                       PEAK_SCHEDULER_WORKLOAD_COUNT_MAX,
+                                                       scheduler.workloads,
+                                                       &scheduler.workload_count, 
+                                                       &removed_workload_c);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL(removed_workload_c, &workload_four);
+        
+        workload_count = 0;
+        errc = peak_scheduler_get_workload_count(&scheduler,
+                                                 &workload_count);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL((size_t)1, workload_count);
+        
+        
+        struct peak_workload* removed_workload_d;
+        errc = peak_internal_remove_key_from_workloads(&workload_two,
+                                                       PEAK_SCHEDULER_WORKLOAD_COUNT_MAX,
+                                                       scheduler.workloads,
+                                                       &scheduler.workload_count, 
+                                                       &removed_workload_d);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL(removed_workload_d, &workload_two);
+        
+        workload_count = 0;
+        errc = peak_scheduler_get_workload_count(&scheduler,
+                                                 &workload_count);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL((size_t)0, workload_count);
+        
+        
+        
+        
+        errc = peak_scheduler_finalize(&scheduler,
+                                       &test_allocator,
+                                       &test_alloc,
+                                       &test_dealloc);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        
+        CHECK_EQUAL(test_allocator.alloc_count(), 
+                    test_allocator.dealloc_count());
+    }
+    
+    
+    TEST_FIXTURE(allocator_test_fixture, find_workloads_in_scheduler_and_prevent_adding_contained_workloads)
+    {
+#error Implement
+    }
+    
+    
     
     /*
     TEST(add_and_remove_a_simple_workload_from_scheduler)

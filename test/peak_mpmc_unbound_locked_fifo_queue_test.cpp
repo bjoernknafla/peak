@@ -59,7 +59,7 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
     
     
     
-    TEST_FIXTURE(queue_test_fixture, sequential_create_push_destroy)
+    TEST_FIXTURE(allocator_test_fixture, sequential_create_push_destroy)
     {
         // Create the queue
         struct peak_unbound_fifo_queue_node_s *queue_first_sentry_node = (struct peak_unbound_fifo_queue_node_s*)test_alloc(&test_allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
@@ -101,7 +101,7 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
     
     
     
-    TEST_FIXTURE(queue_test_fixture, sequential_push_trypop)
+    TEST_FIXTURE(allocator_test_fixture, sequential_push_trypop)
     {
         // Create the queue
         struct peak_unbound_fifo_queue_node_s *queue_first_sentry_node = (struct peak_unbound_fifo_queue_node_s*)test_alloc(&test_allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
@@ -491,7 +491,7 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
     
     
     
-    TEST_FIXTURE(queue_test_fixture, parallel_push_trypop)
+    TEST_FIXTURE(allocator_test_fixture, parallel_push_trypop)
     {
         // First sentry put on stack as the test threads don't manage memory.
         // All other nodes that will be used are managed by this test.

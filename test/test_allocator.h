@@ -150,15 +150,15 @@ namespace {
     }
     
 
-    class queue_test_fixture {
+    class allocator_test_fixture {
     public:
-        queue_test_fixture()
+        allocator_test_fixture()
         :   test_allocator()
         {
         }
         
         
-        virtual ~queue_test_fixture()
+        virtual ~allocator_test_fixture()
         {
             
         }
