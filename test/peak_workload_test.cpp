@@ -25,7 +25,7 @@
 
 struct peak_workload;
 struct peak_scheduler;
-struct peak_scheduler_context;
+struct peak_workload_scheduler_funcs;
 
 
 enum peak_workload_state {
@@ -49,7 +49,8 @@ typedef int (*peak_workload_vtbl_destroy_func)(struct peak_workload* workload,
                                                peak_alloc_func_t alloc_func,
                                                peak_dealloc_func_t dealloc_func);
 typedef peak_workload_state_t (*peak_workload_vtbl_serve_func)(struct peak_workload* workload,
-                                                               struct peak_scheduler_context* scheduler_context);
+                                                               void* scheduler_context,
+                                                               struct peak_workload_scheduler_funcs* scheduler_funcs);
 
 
 struct peak_workload_vtbl {
@@ -57,6 +58,7 @@ struct peak_workload_vtbl {
      * the parent of the new workload.
      */
     peak_workload_vtbl_adapt_func adapt_func;
+    /* TODO: @todo tile_adapt_func, tile_repel_func*/
     /* Unregisters the workload from its parent (if applicable) */
     peak_workload_vtbl_repel_func repel_func;
     /* Finalizes the workload and frees the memory */
@@ -67,15 +69,13 @@ struct peak_workload_vtbl {
 typedef struct peak_workload_vtbl* peak_workload_vtbl_t;
 
 struct peak_workload {
-    
+    struct peak_workload* parent;
     struct peak_workload_vtbl* vtbl;
     
     /* struct peak_mpmc_unbound_locked_fifo_queue_s* queue; */
     
-    struct amp_raw_mutex_s user_context_mutex;
+    /* TODO: @todo Remove struct amp_raw_mutex_s user_context_mutex; */
     void* user_context;
-    
-    struct peak_workload* parent;
 };
 typedef struct peak_workload* peak_workload_t;
 
@@ -83,7 +83,9 @@ typedef struct peak_workload* peak_workload_t;
 #define PEAK_SCHEDULER_WORKLOAD_COUNT_MAX 6
 
 enum peak_scheduler_workload_index {
-    peak_default_scheduler_workload_index = 0 /*,
+    peak_work_stealing_scheduler_workload_index = 0,
+    peak_local_scheduler_workload_index = 1,
+    peak_default_scheduler_workload_index = 2 /*,
                                                peak_tile_scheduler_workload_index,
                                                peak_workstealing_scheduler_workload_index,
                                                peak_local_scheduler_workload_index */
@@ -91,22 +93,21 @@ enum peak_scheduler_workload_index {
 typedef enum peak_scheduler_workload_index peak_scheduler_workload_index_t;
 
 
-
-struct peak_scheduler_context {
-    void* allocator_context;
-    peak_alloc_func_t alloc_func;
-    peak_dealloc_func_t dealloc_func;
-    
-    /* TODO: @todo Add functions to access the purely local queue and the
-     *             default queue and the tile queue. When dispatching to them
-     *             the current worker/compute unit must be known for stats
-     *             and to control sync and blocking calls.
+struct peak_workload_scheduler_funcs {
+    /* TODO: @todo Add ways to dispatch jobs to the default, the local, and the
+     *             local work stealing workload.
+     * TODO: @todo Decide if to add functions to serve/drain the default, local,
+     *             and local work stealing workloads.
      */
-    
-    /* Treat these fields as opaque and don't access them */
-
+    /* peak_workload_scheduler_get_default_dispatcher_func get_default_dispatcher_func */
+    /* peak_workload_scheduler_get_default_workload_func get_default_workload_func; */
+    /*
+    peak_workload_scheduler_get_allocator_func get_allocator_func;
+    peak_workload_scheduler_alloc_func alloc_func;
+    peak_workload_scheduler_dealloc_func dealloc_func;
+     */
 };
-typedef struct peak_scheduler_context* peak_scheduler_context_t;
+typedef struct peak_workload_scheduler_funcs* peak_workload_scheduler_funcs_t;
 
 
 struct peak_scheduler {
@@ -116,7 +117,11 @@ struct peak_scheduler {
     struct peak_workload** workloads;
     size_t workload_count;
     
-    struct peak_scheduler_context scheduler_context;
+    void* allocator_context;
+    peak_alloc_func_t alloc_func;
+    peak_dealloc_func_t dealloc_func;
+    
+    struct peak_workload_scheduler_funcs* workload_scheduler_funcs;
     
     unsigned int running;
 };
@@ -157,9 +162,10 @@ int peak_scheduler_init(peak_scheduler_t scheduler,
     scheduler->next_workload_index = 0;
     scheduler->workloads = workloads;
     scheduler->workload_count = 0;
-    scheduler->scheduler_context.allocator_context = allocator_context;
-    scheduler->scheduler_context.alloc_func = alloc_func;
-    scheduler->scheduler_context.dealloc_func = dealloc_func;
+    scheduler->allocator_context = allocator_context;
+    scheduler->alloc_func = alloc_func;
+    scheduler->dealloc_func = dealloc_func;
+    scheduler->workload_scheduler_funcs = NULL;
     scheduler->running = 1;
     
     return PEAK_SUCCESS;
@@ -196,9 +202,9 @@ int peak_scheduler_finalize(peak_scheduler_t scheduler,
     scheduler->next_workload_index = 0;
     scheduler->workloads = NULL;
     scheduler->workload_count = 0;
-    scheduler->scheduler_context.allocator_context = NULL;
-    scheduler->scheduler_context.alloc_func = NULL;
-    scheduler->scheduler_context.dealloc_func = NULL;
+    scheduler->allocator_context = NULL;
+    scheduler->alloc_func = NULL;
+    scheduler->dealloc_func = NULL;
     scheduler->running = 0;
     
     return PEAK_SUCCESS;
@@ -272,7 +278,6 @@ int peak_internal_find_key_in_workloads(peak_workload_t key,
 {
     assert(NULL != key);
     assert(NULL != workloads);
-    assert(start_index < workload_count);
     assert(NULL != key_found_index);
     
     if (NULL == key
@@ -283,34 +288,40 @@ int peak_internal_find_key_in_workloads(peak_workload_t key,
         return EINVAL;
     }
     
-    /* First: fast breadth search */
-    for (size_t i = start_index; i < workload_count; ++i) {
-        
-        peak_workload_t wl = workloads[i];
-        
-        if (wl == key 
-            || wl->parent == key) {
+    peak_workload_t lookup_key = key;
+#error Look into the outer loop in the find routine. It doesn't work with remove. Decide how to tackle the problem of identifying double entries in the scheduler array.
+    while (lookup_key != NULL) {
+        /* First: fast breadth search */
+        for (size_t i = start_index; i < workload_count; ++i) {
             
-            *key_found_index = i;
-            return PEAK_SUCCESS;
-        }
-    }
-    
-    /* Second: slow and intensive deapth search */
-    for (size_t i = start_index; i < workload_count; ++i) {
-        
-        peak_workload_t wl = workloads[i]->parent;
-        
-        while (NULL != wl) {
-            if (key == wl) {
+            peak_workload_t wl = workloads[i];
+            
+            if (wl == lookup_key 
+                || wl->parent == lookup_key) {
+                
                 *key_found_index = i;
                 return PEAK_SUCCESS;
             }
-            
-            wl = wl->parent;
         }
+        
+        /* Second: slow and intensive deapth search */
+        for (size_t i = start_index; i < workload_count; ++i) {
+            
+            peak_workload_t wl = workloads[i]->parent;
+            
+            while (NULL != wl) {
+                if (lookup_key == wl) {
+                    *key_found_index = i;
+                    return PEAK_SUCCESS;
+                }
+                
+                wl = wl->parent;
+            }
+        }
+        
+        lookup_key = lookup_key->parent;
     }
-    
+
     return ESRCH;
 }
 
@@ -412,6 +423,9 @@ int peak_internal_remove_key_from_workloads(peak_workload_t key,
                                             size_t* workload_count,
                                             peak_workload_t* removed_workload)
 {
+#error Look into the outer loop in the find routine. It doesn't work with remove. Decide how to tackle the problem of identifying double entries in the scheduler array.
+    
+    
     assert(NULL != key);
     assert(NULL != workloads);
     assert(NULL != workload_count);
@@ -469,10 +483,10 @@ int peak_scheduler_adapt_and_add_workload(peak_scheduler_t scheduler,
     
     size_t found_index = PEAK_SCHEDULER_WORKLOAD_COUNT_MAX;
     int return_code = peak_internal_find_key_in_workloads(parent_workload,
-                                                          scheduler->worklaods,
+                                                          scheduler->workloads,
                                                           scheduler->workload_count,
                                                           0,
-                                                          found_index);
+                                                          &found_index);
     if (PEAK_SUCCESS == return_code
         || found_index != PEAK_SCHEDULER_WORKLOAD_COUNT_MAX) {
         
@@ -485,9 +499,9 @@ int peak_scheduler_adapt_and_add_workload(peak_scheduler_t scheduler,
     peak_workload_t adapted_workload = NULL;
     return_code = parent_workload->vtbl->adapt_func(parent_workload,
                                                     &adapted_workload,
-                                                    scheduler->scheduler_context.allocator_context,
-                                                    scheduler->scheduler_context.alloc_func,
-                                                    scheduler->scheduler_context.dealloc_func);
+                                                    scheduler->allocator_context,
+                                                    scheduler->alloc_func,
+                                                    scheduler->dealloc_func);
     if (PEAK_SUCCESS == return_code) {
         
         return_code = peak_internal_push_to_workloads(adapted_workload,
@@ -529,15 +543,15 @@ int peak_scheduler_remove_and_repel_workload(peak_scheduler_t scheduler,
         scheduler->next_workload_index %= scheduler->workload_count;
         
         return_code = removed_workload->vtbl->repel_func(removed_workload,
-                                                         scheduler->scheduler_context.allocator_context,
-                                                         scheduler->scheduler_context.alloc_func,
-                                                         scheduler->scheduler_context.dealloc_func);
+                                                         scheduler->allocator_context,
+                                                         scheduler->alloc_func,
+                                                         scheduler->dealloc_func);
         assert(PEAK_SUCCESS == return_code && "Must not fail");
         
         return_code = removed_workload->vtbl->destroy_func(removed_workload,
-                                                           scheduler->scheduler_context.allocator_context,
-                                                           scheduler->scheduler_context.alloc_func,
-                                                           scheduler->scheduler_context.dealloc_func);
+                                                           scheduler->allocator_context,
+                                                           scheduler->alloc_func,
+                                                           scheduler->dealloc_func);
         assert(PEAK_SUCCESS == return_code && "Must not fail");
         
         removed_workload = NULL;
@@ -571,7 +585,8 @@ int peak_scheduler_run_next_workload(peak_scheduler_t scheduler)
     peak_workload_t wl = scheduler->workloads[next_index];
     
     peak_workload_state_t state = wl->vtbl->serve_func(wl,
-                                                       &scheduler->scheduler_context);
+                                                       scheduler,
+                                                       scheduler->workload_scheduler_funcs);
     if (peak_running_workload_state == state) {
         next_index = (next_index + 1) % scheduler->workload_count;
         return_code = PEAK_SUCCESS;
@@ -833,11 +848,458 @@ SUITE(peak_workload)
     }
     
     
-    TEST_FIXTURE(allocator_test_fixture, find_workloads_in_scheduler_and_prevent_adding_contained_workloads)
+    TEST_FIXTURE(allocator_test_fixture, find_workloads_in_scheduler)
     {
-#error Implement
+        struct peak_workload workload_one;
+        workload_one.parent = NULL;
+        
+        struct peak_workload workload_two;
+        workload_two.parent = NULL;
+        
+        struct peak_workload workload_three_parent_one;
+        workload_three_parent_one.parent = &workload_one;
+        
+        struct peak_workload workload_four;
+        workload_four.parent = NULL;
+        
+        struct peak_workload workload_five_parent_four;
+        workload_five_parent_four.parent = &workload_four;
+        
+        struct peak_workload workload_six_parent_five_and_four;
+        workload_six_parent_five_and_four.parent = &workload_five_parent_four;
+        
+        
+        struct peak_scheduler scheduler;
+        int errc = peak_scheduler_init(&scheduler,
+                                       &test_allocator,
+                                       &test_alloc,
+                                       &test_dealloc);
+        assert(PEAK_SUCCESS == errc);
+        
+        
+        errc = peak_internal_push_to_workloads(&workload_one, 
+                                               PEAK_SCHEDULER_WORKLOAD_COUNT_MAX, 
+                                               scheduler.workloads, 
+                                               &scheduler.workload_count);
+        assert(PEAK_SUCCESS == errc);
+        
+        errc = peak_internal_push_to_workloads(&workload_three_parent_one, 
+                                               PEAK_SCHEDULER_WORKLOAD_COUNT_MAX, 
+                                               scheduler.workloads, 
+                                               &scheduler.workload_count);
+        assert(PEAK_SUCCESS == errc);
+        
+        errc = peak_internal_push_to_workloads(&workload_six_parent_five_and_four, 
+                                               PEAK_SCHEDULER_WORKLOAD_COUNT_MAX, 
+                                               scheduler.workloads, 
+                                               &scheduler.workload_count);
+        assert(PEAK_SUCCESS == errc);
+        
+        // Find workload_one at index 0 and at index 1
+        size_t index_found = PEAK_SCHEDULER_WORKLOAD_COUNT_MAX;
+        errc = peak_internal_find_key_in_workloads(&workload_one,
+                                                   scheduler.workloads,
+                                                   scheduler.workload_count,
+                                                   0, 
+                                                   &index_found);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL(static_cast<size_t>(0), index_found);
+        
+        errc = peak_internal_find_key_in_workloads(&workload_one,
+                                                   scheduler.workloads,
+                                                   scheduler.workload_count,
+                                                   index_found + 1, 
+                                                   &index_found);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL(static_cast<size_t>(1), index_found);
+        
+        
+        // Do not find workload_two
+        index_found = PEAK_SCHEDULER_WORKLOAD_COUNT_MAX;
+        errc = peak_internal_find_key_in_workloads(&workload_two,
+                                                   scheduler.workloads,
+                                                   scheduler.workload_count,
+                                                   0, 
+                                                   &index_found);
+        CHECK_EQUAL(ESRCH, errc);
+        
+        
+        // Do find worload_four, workload_five_parent_four, 
+        // workload_six_parent_five_and_four
+        index_found = PEAK_SCHEDULER_WORKLOAD_COUNT_MAX;
+        errc = peak_internal_find_key_in_workloads(&workload_six_parent_five_and_four,
+                                                   scheduler.workloads,
+                                                   scheduler.workload_count,
+                                                   0, 
+                                                   &index_found);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL(static_cast<size_t>(2), index_found);
+        
+        index_found = PEAK_SCHEDULER_WORKLOAD_COUNT_MAX;
+        errc = peak_internal_find_key_in_workloads(&workload_five_parent_four,
+                                                   scheduler.workloads,
+                                                   scheduler.workload_count,
+                                                   0, 
+                                                   &index_found);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL(static_cast<size_t>(2), index_found);
+        
+        index_found = PEAK_SCHEDULER_WORKLOAD_COUNT_MAX;
+        errc = peak_internal_find_key_in_workloads(&workload_four,
+                                                   scheduler.workloads,
+                                                   scheduler.workload_count,
+                                                   0, 
+                                                   &index_found);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK_EQUAL(static_cast<size_t>(2), index_found);
+        
+        // Cleanup.
+        peak_workload_t dummy_workload = NULL;
+        errc = peak_internal_remove_index_from_workloads(2,
+                                                         scheduler.workloads,
+                                                         &scheduler.workload_count,
+                                                         &dummy_workload);
+        assert(PEAK_SUCCESS == errc);
+        
+        dummy_workload = NULL;
+        errc = peak_internal_remove_index_from_workloads(1,
+                                                         scheduler.workloads,
+                                                         &scheduler.workload_count,
+                                                         &dummy_workload);
+        assert(PEAK_SUCCESS == errc);
+        
+        dummy_workload = NULL;
+        errc = peak_internal_remove_index_from_workloads(0,
+                                                         scheduler.workloads,
+                                                         &scheduler.workload_count,
+                                                         &dummy_workload);
+        assert(PEAK_SUCCESS == errc);
+        
+        errc = peak_scheduler_finalize(&scheduler,
+                                       &test_allocator,
+                                       &test_alloc,
+                                       &test_dealloc);
+        assert(PEAK_SUCCESS == errc);
+        
+        CHECK_EQUAL(test_allocator.alloc_count(), 
+                    test_allocator.dealloc_count());
     }
     
+    
+
+    namespace {
+        
+        struct test_shared_context_workload_context {
+            struct amp_raw_mutex_s shared_context_mutex;
+            
+            int id;
+            
+            int adapt_counter;
+            int repel_counter;
+            int serve_counter;
+        };
+        
+        int test_shared_context_workload_adapt_func(struct peak_workload* parent,
+                                                    struct peak_workload** local,
+                                                    void* allocator_context,
+                                                    peak_alloc_func_t alloc_func,
+                                                    peak_dealloc_func_t dealloc_func)
+        {
+            assert(NULL != parent);
+            assert(NULL != local);
+            assert(NULL != alloc_func);
+            assert(NULL != dealloc_func);
+            
+            struct test_shared_context_workload_context* context = (struct test_shared_context_workload_context*)(parent->user_context);
+            
+            
+            int errc = amp_raw_mutex_lock(&context->shared_context_mutex);
+            assert(AMP_SUCCESS == errc);
+            {
+                ++(context->adapt_counter);
+            }
+            errc = amp_raw_mutex_unlock(&context->shared_context_mutex);
+            assert(AMP_SUCCESS == errc);
+            
+            
+            *local = parent;
+            
+            return PEAK_SUCCESS;
+        }
+        
+        
+        
+        int test_shared_context_workload_repel_func(struct peak_workload* local,
+                                                    void* allocator_context,
+                                                    peak_alloc_func_t alloc_func,
+                                                    peak_dealloc_func_t dealloc_func)
+        {
+            assert(NULL != local);
+            assert(NULL != alloc_func);
+            assert(NULL != dealloc_func);
+            
+            struct test_shared_context_workload_context* context = (struct test_shared_context_workload_context*)(local->user_context);
+            
+            
+            int errc = amp_raw_mutex_lock(&context->shared_context_mutex);
+            assert(AMP_SUCCESS == errc);
+            {
+                ++(context->repel_counter);
+            }
+            errc = amp_raw_mutex_unlock(&context->shared_context_mutex);
+            assert(AMP_SUCCESS == errc);
+            
+            return PEAK_SUCCESS;
+        }
+        
+        
+        int test_shared_context_workload_destroy_func(struct peak_workload* workload,
+                                                      void* allocator_context,
+                                                      peak_alloc_func_t alloc_func,
+                                                      peak_dealloc_func_t dealloc_func)
+        {
+            assert(NULL != workload);
+            assert(NULL != alloc_func);
+            assert(NULL != dealloc_func);
+            
+            struct test_shared_context_workload_context* context = (struct test_shared_context_workload_context*)(workload->user_context);
+            
+            int zero_references = 0;
+            
+            int errc = amp_raw_mutex_lock(&context->shared_context_mutex);
+            assert(AMP_SUCCESS == errc);
+            {
+                if (context->adapt_counter == context->repel_counter) {
+                    
+                    zero_references = 1;
+                }
+            }
+            errc = amp_raw_mutex_unlock(&context->shared_context_mutex);
+            assert(AMP_SUCCESS == errc);
+            
+            
+            int return_code = EBUSY;
+            
+            if (1 == zero_references) {
+                
+                return_code = amp_raw_mutex_finalize(&context->shared_context_mutex);
+                if (PEAK_SUCCESS == errc) {
+                    dealloc_func(allocator_context, workload);
+                    
+                    return_code = PEAK_SUCCESS;
+                }
+            }
+            
+            return return_code;
+        }
+        
+        
+        peak_workload_state_t test_shared_context_workload_serve_func(struct peak_workload* workload,
+                                                    void* scheduler_context,
+                                                    peak_workload_scheduler_funcs_t scheduler_funcs)
+        {
+            assert(NULL != workload);
+            assert(NULL != scheduler_context);
+            
+            struct test_shared_context_workload_context* context = (struct test_shared_context_workload_context*)(workload->user_context);
+            
+            
+            int errc = amp_raw_mutex_lock(&context->shared_context_mutex);
+            assert(AMP_SUCCESS == errc);
+            {
+                ++(context->serve_counter);
+            }
+            errc = amp_raw_mutex_unlock(&context->shared_context_mutex);
+            assert(AMP_SUCCESS == errc);
+            
+            return peak_running_workload_state;
+        }
+        
+        
+        
+        struct peak_workload_vtbl test_shared_context_workload_vtbl = {
+            &test_shared_context_workload_adapt_func,
+            &test_shared_context_workload_repel_func,
+            &test_shared_context_workload_destroy_func,
+            &test_shared_context_workload_serve_func
+        };
+        
+        
+        int test_shared_context_workload_create(peak_workload_t* workload,
+                                                struct test_shared_context_workload_context* context,
+                                                int id,
+                                                void* allocator_context,
+                                                peak_alloc_func_t alloc_func,
+                                                peak_dealloc_func_t dealloc_func)
+        {
+            assert(NULL != workload);
+            assert(NULL != alloc_func);
+            assert(NULL != dealloc_func);
+            
+
+            
+            struct peak_workload* tmp = (struct peak_workload*)alloc_func(allocator_context, sizeof(struct peak_workload));
+            if (NULL == tmp) {
+                
+                return ENOMEM;
+            }
+            
+            int return_code = amp_raw_mutex_init(&context->shared_context_mutex);
+            
+            if (AMP_SUCCESS == return_code) {
+                
+                context->id = id;
+                context->adapt_counter = 0;
+                context->repel_counter = 0;
+                context->serve_counter = 0;
+                
+                tmp->parent = NULL;
+                tmp->vtbl = &test_shared_context_workload_vtbl;
+                tmp->user_context = context;
+                
+                *workload = tmp;
+                
+                return_code = PEAK_SUCCESS;
+            }
+            
+            return return_code;
+        }
+        
+        
+        int peak_workload_destroy(peak_workload_t workload,
+                                  void* allocator_context,
+                                  peak_alloc_func_t alloc_func,
+                                  peak_dealloc_func_t dealloc_func)
+        {
+            assert(NULL != workload);
+            assert(NULL != alloc_func);
+            assert(NULL != dealloc_func);
+            
+            if (NULL == workload 
+                || NULL == alloc_func
+                || NULL == dealloc_func) {
+                
+                return EINVAL;
+            }
+            
+            return workload->vtbl->destroy_func(workload, 
+                                                allocator_context, 
+                                                alloc_func, 
+                                                dealloc_func);
+        }
+                                  
+        
+    } // anonymous namespace
+    
+    
+    
+    TEST_FIXTURE(allocator_test_fixture, forbidden_to_add_contained_workloads_into_scheduler)
+    {
+        struct peak_scheduler scheduler;
+        int errc = peak_scheduler_init(&scheduler,
+                                       &test_allocator,
+                                       &test_alloc,
+                                       &test_dealloc);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        
+        
+        struct test_shared_context_workload_context context_one;
+        struct test_shared_context_workload_context context_two;
+        struct test_shared_context_workload_context context_three;
+        
+        peak_workload_t workload_one = NULL;
+        int const workload_one_id = 1;
+        errc = test_shared_context_workload_create(&workload_one,
+                                                   &context_one,
+                                                   workload_one_id,
+                                                   &test_allocator,
+                                                   &test_alloc,
+                                                   &test_dealloc);
+        assert(PEAK_SUCCESS == errc);
+        
+        peak_workload_t workload_two = NULL;
+        int const workload_two_id = 2;
+        errc = test_shared_context_workload_create(&workload_two,
+                                                   &context_two,
+                                                   workload_two_id,
+                                                   &test_allocator,
+                                                   &test_alloc,
+                                                   &test_dealloc);
+        assert(PEAK_SUCCESS == errc);
+        
+        peak_workload_t workload_three = NULL;
+        int const workload_three_id = 3;
+        errc = test_shared_context_workload_create(&workload_three,
+                                                   &context_three,
+                                                   workload_three_id,
+                                                   &test_allocator,
+                                                   &test_alloc,
+                                                   &test_dealloc);
+        assert(PEAK_SUCCESS == errc);
+        workload_three->parent = workload_one;
+        
+        errc =peak_scheduler_adapt_and_add_workload(&scheduler,
+                                                    workload_one);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        
+        errc =peak_scheduler_adapt_and_add_workload(&scheduler,
+                                                    workload_two);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        
+        errc =peak_scheduler_adapt_and_add_workload(&scheduler,
+                                                    workload_three);
+        CHECK_EQUAL(EEXIST, errc);
+        
+        
+        
+        errc = peak_scheduler_remove_and_repel_workload(&scheduler,
+                                                        workload_three);
+        CHECK_EQUAL(EEXIST, errc);
+        
+        errc = peak_scheduler_remove_and_repel_workload(&scheduler,
+                                                        workload_two);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        
+        errc = peak_scheduler_remove_and_repel_workload(&scheduler,
+                                                        workload_one);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        
+        errc = peak_scheduler_finalize(&scheduler,
+                                       &test_allocator,
+                                       &test_alloc,
+                                       &test_dealloc);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        
+        CHECK_EQUAL(test_allocator.alloc_count(), 
+                    test_allocator.dealloc_count());
+        
+        
+        CHECK_EQUAL(context_one.adapt_counter, context_one.repel_counter);
+        CHECK_EQUAL(1, context_one.adapt_counter);
+        CHECK_EQUAL(context_two.adapt_counter, context_two.repel_counter);
+        CHECK_EQUAL(1, context_two.adapt_counter);
+        CHECK_EQUAL(context_three.adapt_counter, context_three.repel_counter);
+        CHECK_EQUAL(0, context_three.adapt_counter);
+    }
+    
+    
+    TEST_FIXTURE(allocator_test_fixture, adapt_and_repel_workloads)
+    {
+        
+    }
+    
+    
+    TEST_FIXTURE(allocator_test_fixture, serve_one_workload)
+    {
+        
+    }
+    
+    
+    
+    TEST_FIXTURE(allocator_test_fixture, serve_multiple_workloads) 
+    {
+        
+    }
     
     
     /*
