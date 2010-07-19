@@ -1,10 +1,33 @@
 /*
- *  peak_dependency.c
- *  peak
+ * Copyright (c) 2009-2010, Bjoern Knafla
+ * http://www.bjoernknafla.com/
+ * All rights reserved.
  *
- *  Created by Björn Knafla on 23.04.10.
- *  Copyright 2010 Bjoern Knafla www.bjoernknafla.com. All rights reserved.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are 
+ * met:
  *
+ *   * Redistributions of source code must retain the above copyright 
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright 
+ *     notice, this list of conditions and the following disclaimer in the 
+ *     documentation and/or other materials provided with the distribution.
+ *   * Neither the name of the Bjoern Knafla 
+ *     Parallelization + AI + Gamedev Consulting nor the names of its 
+ *     contributors may be used to endorse or promote products derived from 
+ *     this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include "peak_dependency.h"
@@ -74,7 +97,7 @@ int peak_raw_dependency_finalize(struct peak_raw_dependency_s* dependency)
     uint64_t waiting = 0;
     enum peak_dependency_state state = peak_counting_dependency_state;
     
-    int errc = amp_raw_mutex_trylock(&dependency->count_mutex);
+    int errc = amp_mutex_trylock(&dependency->count_mutex);
     assert(EBUSY == errc || AMP_SUCCESS == errc);
     if (AMP_SUCCESS == errc) {
         count = dependency->dependency_count;
@@ -84,7 +107,7 @@ int peak_raw_dependency_finalize(struct peak_raw_dependency_s* dependency)
         return errc;
     }
     
-    errc = amp_raw_mutex_unlock(&dependency->count_mutex);
+    errc = amp_mutex_unlock(&dependency->count_mutex);
     assert(AMP_SUCCESS == errc);
     
     if (0 != count || 0 != waiting) {
@@ -106,7 +129,7 @@ int peak_raw_dependency_finalize(struct peak_raw_dependency_s* dependency)
 
 
 int peak_internal_dependency_get_dependency_count(peak_dependency_t dependency, 
-                                       uint64_t* result)
+                                                  uint64_t* result)
 {
     assert(NULL != dependency);
     assert(NULL != result);
@@ -117,7 +140,7 @@ int peak_internal_dependency_get_dependency_count(peak_dependency_t dependency,
         return EINVAL;
     }
     
-    int errc = amp_raw_mutex_lock(&dependency->count_mutex);
+    int errc = amp_mutex_lock(&dependency->count_mutex);
     assert(AMP_SUCCESS == errc);
     if (AMP_SUCCESS != errc) {
         return errc;
@@ -125,7 +148,7 @@ int peak_internal_dependency_get_dependency_count(peak_dependency_t dependency,
     
     *result = dependency->dependency_count;
     
-    errc = amp_raw_mutex_unlock(&dependency->count_mutex);
+    errc = amp_mutex_unlock(&dependency->count_mutex);
     assert(AMP_SUCCESS == errc);
     if (AMP_SUCCESS != errc) {
         return errc;
@@ -148,7 +171,7 @@ int peak_internal_dependency_get_waiting_count(peak_dependency_t dependency,
         return EINVAL;
     }
     
-    int errc = amp_raw_mutex_lock(&dependency->count_mutex);
+    int errc = amp_mutex_lock(&dependency->count_mutex);
     assert(AMP_SUCCESS == errc);
     if (AMP_SUCCESS != errc) {
         return errc;
@@ -156,7 +179,7 @@ int peak_internal_dependency_get_waiting_count(peak_dependency_t dependency,
     
     *result = dependency->waiting_count;
     
-    errc = amp_raw_mutex_unlock(&dependency->count_mutex);
+    errc = amp_mutex_unlock(&dependency->count_mutex);
     assert(AMP_SUCCESS == errc);
     if (AMP_SUCCESS != errc) {
         return errc;
@@ -168,9 +191,9 @@ int peak_internal_dependency_get_waiting_count(peak_dependency_t dependency,
 
 
 int peak_dependency_create(peak_dependency_t* dependency,
-                        void* allocator_context,
-                        peak_alloc_func_t alloc_func,
-                        peak_dealloc_func_t dealloc_func)
+                           void* allocator_context,
+                           peak_alloc_func_t alloc_func,
+                           peak_dealloc_func_t dealloc_func)
 {
     assert(NULL != dependency);
     assert(NULL != alloc_func);
@@ -201,9 +224,9 @@ int peak_dependency_create(peak_dependency_t* dependency,
 
 
 int peak_dependency_destroy(peak_dependency_t dependency,
-                         void* allocator_context,
-                         peak_alloc_func_t alloc_func,
-                         peak_dealloc_func_t dealloc_func)
+                            void* allocator_context,
+                            peak_alloc_func_t alloc_func,
+                            peak_dealloc_func_t dealloc_func)
 {
     assert(NULL != dependency);
     assert(NULL != alloc_func);
@@ -234,17 +257,17 @@ int peak_dependency_increase(peak_dependency_t dependency)
     /* Default error: too many jobs try to increase the dependency. */
     int return_code = ERANGE;
     
-    int errc = amp_raw_mutex_lock(&dependency->count_mutex);
+    int errc = amp_mutex_lock(&dependency->count_mutex);
     assert(AMP_SUCCESS == errc);
     {
         /* incr have a speed advantage over decr - though as both should be
          * balanced decr will get its change to trigger a wake up phase.
-        while(peak_counting_dependency_state != dependency->state) {
-            errc = amp_raw_condition_variable_wait(&dependency->counting_condition,
-                                                   &dependency->count_mutex);
-            assert(AMP_SUCCESS == errc);
-        }
-        */
+         while(peak_counting_dependency_state != dependency->state) {
+         errc = amp_raw_condition_variable_wait(&dependency->counting_condition,
+         &dependency->count_mutex);
+         assert(AMP_SUCCESS == errc);
+         }
+         */
         
         uint64_t const count = dependency->dependency_count;
         assert(UINT64_MAX != count);
@@ -254,11 +277,11 @@ int peak_dependency_increase(peak_dependency_t dependency)
         }
         
         /*
-        errc = amp_raw_condition_variable_signal(&dependency->counting_condition);
-        assert(AMP_SUCCESS == errc);
+         errc = amp_raw_condition_variable_signal(&dependency->counting_condition);
+         assert(AMP_SUCCESS == errc);
          */
     }
-    errc = amp_raw_mutex_unlock(&dependency->count_mutex);
+    errc = amp_mutex_unlock(&dependency->count_mutex);
     assert(AMP_SUCCESS == errc);
     
     return return_code;
@@ -270,7 +293,7 @@ int peak_dependency_decrease(peak_dependency_t dependency)
 {
     assert(NULL != dependency);
     
-    int errc = amp_raw_mutex_lock(&dependency->count_mutex);
+    int errc = amp_mutex_lock(&dependency->count_mutex);
     assert(AMP_SUCCESS == errc);
     {        
         
@@ -278,8 +301,8 @@ int peak_dependency_decrease(peak_dependency_t dependency)
             --(dependency->dependency_count);
         } else {
             while (peak_counting_dependency_state != dependency->state) {
-                int const ec = amp_raw_condition_variable_wait(&dependency->counting_condition,
-                                                               &dependency->count_mutex);
+                int const ec = amp_condition_variable_wait(&dependency->counting_condition,
+                                                           &dependency->count_mutex);
                 assert(AMP_SUCCESS == ec);
             }
             
@@ -292,12 +315,12 @@ int peak_dependency_decrease(peak_dependency_t dependency)
                 && 0 != dependency->waiting_count) {
                 
                 dependency->state = peak_waking_waiting_dependency_state;
-                int const ec = amp_raw_condition_variable_signal(&dependency->waking_waiting_condition);
+                int const ec = amp_condition_variable_signal(&dependency->waking_waiting_condition);
                 assert(AMP_SUCCESS == ec);
                 
             } else {
                 
-                int const ec = amp_raw_condition_variable_signal(&dependency->counting_condition);
+                int const ec = amp_condition_variable_signal(&dependency->counting_condition);
                 assert(AMP_SUCCESS == ec);
             }
             
@@ -305,7 +328,7 @@ int peak_dependency_decrease(peak_dependency_t dependency)
         
         
     }
-    errc = amp_raw_mutex_unlock(&dependency->count_mutex);
+    errc = amp_mutex_unlock(&dependency->count_mutex);
     assert(AMP_SUCCESS == errc);
     
     return PEAK_SUCCESS;
@@ -317,13 +340,13 @@ int peak_dependency_wait(peak_dependency_t dependency)
 {
     assert(NULL != dependency);
     
-    int errc = amp_raw_mutex_lock(&dependency->count_mutex);
+    int errc = amp_mutex_lock(&dependency->count_mutex);
     assert(AMP_SUCCESS == errc);
     {
         if (0 != dependency->dependency_count) {
             
             while (peak_counting_dependency_state != dependency->state) {
-                int const ec = amp_raw_condition_variable_wait(&dependency->counting_condition,
+                int const ec = amp_condition_variable_wait(&dependency->counting_condition,
                                                            &dependency->count_mutex);
                 assert(AMP_SUCCESS == ec);
             }
@@ -332,32 +355,32 @@ int peak_dependency_wait(peak_dependency_t dependency)
                 ++(dependency->waiting_count);
                 
                 /* Balance consumption and emitting of condition signals */
-                int const erc = amp_raw_condition_variable_signal(&dependency->counting_condition);
+                int const erc = amp_condition_variable_signal(&dependency->counting_condition);
                 assert(AMP_SUCCESS == erc);
                 
                 
                 while (peak_waking_waiting_dependency_state != dependency->state) {
-                    int const ec = amp_raw_condition_variable_wait(&dependency->waking_waiting_condition, &dependency->count_mutex);
+                    int const ec = amp_condition_variable_wait(&dependency->waking_waiting_condition, &dependency->count_mutex);
                     assert(AMP_SUCCESS == ec);
                 }
                 
                 uint64_t const decremented_waiting_count = --(dependency->waiting_count);
                 
                 if (0 != decremented_waiting_count) {
-                    int const ec = amp_raw_condition_variable_signal(&dependency->waking_waiting_condition);
+                    int const ec = amp_condition_variable_signal(&dependency->waking_waiting_condition);
                     assert(AMP_SUCCESS == ec);
                 } else {
                     dependency->state = peak_counting_dependency_state;
-                    int const ec = amp_raw_condition_variable_signal(&dependency->counting_condition);
+                    int const ec = amp_condition_variable_signal(&dependency->counting_condition);
                     assert(AMP_SUCCESS == ec);
                 }
             } else {
-                int const ec = amp_raw_condition_variable_signal(&dependency->counting_condition);
+                int const ec = amp_condition_variable_signal(&dependency->counting_condition);
                 assert(AMP_SUCCESS == ec);
             }
         }
     }
-    errc = amp_raw_mutex_unlock(&dependency->count_mutex);
+    errc = amp_mutex_unlock(&dependency->count_mutex);
     assert(AMP_SUCCESS == errc);
     
     return PEAK_SUCCESS;

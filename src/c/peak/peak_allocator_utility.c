@@ -30,40 +30,53 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/**
- * @file
- *
- * Wrapper to provide C99 stdint types like uint8_t, uintptr_t, int64_t, etc.
- * even on Windows via MSVC.
- *
- * This header is far from complete and only a stopgap solution to move
- * further with more important issues.
- *
- * TODO: @todo Make this solution less hacky - eventually use poc. Currently
- *             only uintptr_t is used...
- */
+#include "peak_allocator_utility.h"
 
-#ifndef PEAK_peak_stdint_H
-#define PEAK_peak_stdint_H
-
-#if defined(PEAK_USE_MSVC)
-#   include <windows.h>
-#else
-#   include <stdint.h>
-#endif
+#include "peak_return_code.h"
 
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
+int peak_convert_peak_to_amp_allocator(peak_allocator_t source,
+                                       amp_allocator_t target)
+{
+    assert(NULL != source);
+    assert(NULL != target);
     
-    
-    
-    
-#if defined(__cplusplus)
-} /* extern "C" */
-#endif
+    if (amp_default_allocator == target) {
         
+        return PEAK_ERROR;
+    }
+    
+    target->alloc_func = source->alloc_func;
+    target->calloc_func = source->calloc_func;
+    target->dealloc_func = source->dealloc_func;
+    target->allocator_context = source->allocator_context;
+    
+    return PEAK_SUCCESS;
+}
 
-#endif /* PEAK_peak_stdint_H */
+
+
+int peak_convert_from_amp_to_peak_allocator(amp_allocator_t source,
+                                            peak_allocator_t target)
+{
+    assert(NULL != source);
+    assert(NULL != target);
+    
+    if (peak_default_allocator == target) {
+        
+        return PEAK_ERROR;
+    }
+    
+    target->alloc_func = source->alloc_func;
+    target->calloc_func = source->calloc_func;
+    target->dealloc_func = source->dealloc_func;
+    target->allocator_context = source->allocator_context;
+    
+    /*
+     * Does not touch the aligned allocation settings of target.
+     */
+    
+    return PEAK_SUCCESS;
+}
+
+

@@ -30,40 +30,57 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/**
- * @file
- *
- * Wrapper to provide C99 stdint types like uint8_t, uintptr_t, int64_t, etc.
- * even on Windows via MSVC.
- *
- * This header is far from complete and only a stopgap solution to move
- * further with more important issues.
- *
- * TODO: @todo Make this solution less hacky - eventually use poc. Currently
- *             only uintptr_t is used...
- */
+#include "peak_memory.h"
 
-#ifndef PEAK_peak_stdint_H
-#define PEAK_peak_stdint_H
+#include <malloc.h>
 
-#if defined(PEAK_USE_MSVC)
-#   include <windows.h>
-#else
-#   include <stdint.h>
+
+#include "peak_data_alignment.h"
+
+
+
+#if !defined(PEAK_USE_MSVC)
+#   error Build configuration problem - this source file shouldn't be compiled.
 #endif
 
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
 
+void *peak_malloc_aligned(size_t alignment, size_t size_in_bytes)
+{
+    // TODO: @todo Decide if to use _aligned_malloc_dbg in debug mode.
+    assert(PEAK_TRUE == peak_is_power_of_two(alignment));
+    assert(bytes <= _HEAP_MAXREQ);
     
-    
-    
-    
-#if defined(__cplusplus)
-} /* extern "C" */
-#endif
-        
+    return _aligned_malloc(bytes, alignment);
+}
 
-#endif /* PEAK_peak_stdint_H */
+
+
+void *peak_calloc_aligned(size_t alignment, 
+                          size_t elem_count, 
+                          size_t bytes_per_elem)
+{
+    void *result = NULL;
+    
+    // TODO: @todo Decide if to use _aligned_malloc_dbg in debug mode.
+    assert(PEAK_TRUE == peak_is_power_of_two(alignment));
+    assert(bytes <= _HEAP_MAXREQ);
+    
+    result = _aligned_malloc(elem_count * bytes_per_elem, alignment);
+    
+    if (NULL != result) {
+        (void)memset(result, 0, elem_count * bytes_per_elem);
+    }
+    
+    return result;
+}
+
+
+
+void peak_free_aligned(void *aligned_pointer)
+{
+    // TODO: @todo Decide if to use _aligned_free_dbg in debug mode.
+    _aligned_free(aligned_pointer);
+}
+
+

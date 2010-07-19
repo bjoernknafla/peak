@@ -17,20 +17,24 @@
 		326776E210A19A8900CC7576 /* pmem_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 326776E110A19A8900CC7576 /* pmem_test.cpp */; };
 		326776E610A19B5400CC7576 /* peak_stdint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 326776E510A19B5400CC7576 /* peak_stdint.cpp */; };
 		326776EA10A19CD800CC7576 /* peak_mpmc_unbound_locked_fifo_queue_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 326776E910A19CD800CC7576 /* peak_mpmc_unbound_locked_fifo_queue_test.cpp */; };
+		32B5AE1411F4ACBC00D68EC5 /* peak_allocator_utility.h in Headers */ = {isa = PBXBuildFile; fileRef = 32B5AE1211F4ACBC00D68EC5 /* peak_allocator_utility.h */; };
+		32B5AE1511F4ACBC00D68EC5 /* peak_allocator_utility.c in Sources */ = {isa = PBXBuildFile; fileRef = 32B5AE1311F4ACBC00D68EC5 /* peak_allocator_utility.c */; };
+		32B5AE1711F4B1D300D68EC5 /* peak_return_code.h in Headers */ = {isa = PBXBuildFile; fileRef = 32B5AE1611F4B1D300D68EC5 /* peak_return_code.h */; };
 		32C1879510A0DB06001852EE /* experiment_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 321E22A6108CA2A40080BFE6 /* experiment_test.cpp */; };
+		32C86FB8119D591A007577DC /* peak_workload_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 32C86FB7119D591A007577DC /* peak_workload_test.cpp */; };
 		32CC03B2119BFEE80023723D /* peak_scheduler.h in Headers */ = {isa = PBXBuildFile; fileRef = 32CC03B0119BFEE80023723D /* peak_scheduler.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		32CC03B3119BFEE80023723D /* peak_scheduler.c in Sources */ = {isa = PBXBuildFile; fileRef = 32CC03B1119BFEE80023723D /* peak_scheduler.c */; };
 		32CC03B8119C02940023723D /* peak_internal_scheduler.h in Headers */ = {isa = PBXBuildFile; fileRef = 32CC03B6119C02940023723D /* peak_internal_scheduler.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		32D38B51117C6F9800D03C80 /* peak.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 32D38B3E117C6C1900D03C80 /* peak.framework */; };
 		32D38BA6117C8B5200D03C80 /* amp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 32D38B57117C8ACD00D03C80 /* amp.framework */; };
-		32D38BCA117C9D8600D03C80 /* pmem_generic.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C1877A10A0CC6D001852EE /* pmem_generic.c */; };
-		32D38BCB117C9D8600D03C80 /* pmem.h in Headers */ = {isa = PBXBuildFile; fileRef = 32C1877910A0CC6D001852EE /* pmem.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		32D38BCA117C9D8600D03C80 /* peak_memory_generic.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C1877A10A0CC6D001852EE /* peak_memory_generic.c */; };
+		32D38BCB117C9D8600D03C80 /* peak_memory.h in Headers */ = {isa = PBXBuildFile; fileRef = 32C1877910A0CC6D001852EE /* peak_memory.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		32D38BCC117C9D8700D03C80 /* peak_stdint.h in Headers */ = {isa = PBXBuildFile; fileRef = 32C187BF10A0DD89001852EE /* peak_stdint.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		32D38BCD117C9D8700D03C80 /* peak_stddef.h in Headers */ = {isa = PBXBuildFile; fileRef = 32C1872C10A075DD001852EE /* peak_stddef.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		32D38BCE117C9D8800D03C80 /* peak_mpmc_unbound_locked_fifo_queue.h in Headers */ = {isa = PBXBuildFile; fileRef = 32C16620109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		32D38BCF117C9D8900D03C80 /* peak_mpmc_unbound_locked_fifo_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C16621109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.c */; };
-		32D38BD0117C9D8900D03C80 /* peak_memory.h in Headers */ = {isa = PBXBuildFile; fileRef = 32C1872D10A08F54001852EE /* peak_memory.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		32D38BD1117C9D8A00D03C80 /* peak_memory.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C1872E10A08F54001852EE /* peak_memory.c */; };
+		32D38BD0117C9D8900D03C80 /* peak_allocator.h in Headers */ = {isa = PBXBuildFile; fileRef = 32C1872D10A08F54001852EE /* peak_allocator.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		32D38BD1117C9D8A00D03C80 /* peak_allocator.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C1872E10A08F54001852EE /* peak_allocator.c */; };
 		32D38BD2117C9D8B00D03C80 /* peak_data_alignment.h in Headers */ = {isa = PBXBuildFile; fileRef = 32C1874F10A0991C001852EE /* peak_data_alignment.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		32D38BD3117C9D8B00D03C80 /* peak_data_alignment.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C1875010A0991C001852EE /* peak_data_alignment.c */; };
 		32D7834D1193011E005B5941 /* peak_scheduler_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 32D7834C1193011E005B5941 /* peak_scheduler_test.cpp */; };
@@ -108,6 +112,76 @@
 			remoteGlobalIDString = 32A4A16B113548DC00D29CD2;
 			remoteInfo = amp_platform_check;
 		};
+		32B58BC411F44ACE00D68EC5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 323B8D1611E32B760024B211 /* amp_platform_check_framework_backend */;
+			remoteInfo = amp_platform_check_framework_backend;
+		};
+		32B58BC611F44ACE00D68EC5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 32F7EC8F11E26CA1005291E8 /* amp_pthread_and_generic_broadcast_barriers_backend_test */;
+			remoteInfo = amp_pthread_and_generic_broadcast_barriers_backend_test;
+		};
+		32B58BC811F44ACE00D68EC5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 32F7ECE111E27018005291E8 /* amp_pthread_and_generic_signal_barriers_backend_test */;
+			remoteInfo = amp_pthread_and_generic_signal_barriers_backend_test;
+		};
+		32B58BCA11F44ACE00D68EC5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 32F7ED0C11E270DB005291E8 /* amp_pthread_and_libdispatch_semaphores_and_generic_broadcast_barriers_backend_test */;
+			remoteInfo = amp_pthread_and_libdispatch_semaphores_and_generic_broadcast_barriers_backend_test;
+		};
+		32B58BCC11F44ACE00D68EC5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 32F7ED3711E2718B005291E8 /* amp_pthread_and_libdispatch_semaphores_and_generic_signal_barriers_backend_test */;
+			remoteInfo = amp_pthread_and_libdispatch_semaphores_and_generic_signal_barriers_backend_test;
+		};
+		32B58BCE11F44ACE00D68EC5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 32F7ED6111E2726A005291E8 /* amp_pthread_and_posix_1003_1b_semaphores_and_generic_broadcast_barriers_backend_test */;
+			remoteInfo = amp_pthread_and_posix_1003_1b_semaphores_and_generic_broadcast_barriers_backend_test;
+		};
+		32B58BD011F44ACE00D68EC5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 32F7ED9511E273F7005291E8 /* amp_pthread_and_posix_1003_1b_semaphores_and_generic_signal_barriers_backend_test */;
+			remoteInfo = amp_pthread_and_posix_1003_1b_semaphores_and_generic_signal_barriers_backend_test;
+		};
+		32B58BD211F44ACE00D68EC5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 323B8CDE11E32AA10024B211 /* amp_platform_check_unknown_backend */;
+			remoteInfo = amp_platform_check_unknown_backend;
+		};
+		32B58BD411F44ACE00D68EC5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 323B8CF111E32AF10024B211 /* amp_platform_check_sysconf_backend */;
+			remoteInfo = amp_platform_check_sysconf_backend;
+		};
+		32B58BD611F44ACE00D68EC5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 323B8CFF11E32B170024B211 /* amp_platform_check_cocoa_backend */;
+			remoteInfo = amp_platform_check_cocoa_backend;
+		};
 		32D38B4E117C6F9100D03C80 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
@@ -154,20 +228,24 @@
 		326776E510A19B5400CC7576 /* peak_stdint.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_stdint.cpp; sourceTree = "<group>"; };
 		326776E910A19CD800CC7576 /* peak_mpmc_unbound_locked_fifo_queue_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_mpmc_unbound_locked_fifo_queue_test.cpp; sourceTree = "<group>"; };
 		328DEBBC117C586700F7A0C0 /* poc.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = poc.xcodeproj; path = build_env/xcode_3_2/poc/poc.xcodeproj; sourceTree = POC; };
+		32B5AE1211F4ACBC00D68EC5 /* peak_allocator_utility.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_allocator_utility.h; sourceTree = "<group>"; };
+		32B5AE1311F4ACBC00D68EC5 /* peak_allocator_utility.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = peak_allocator_utility.c; sourceTree = "<group>"; };
+		32B5AE1611F4B1D300D68EC5 /* peak_return_code.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_return_code.h; sourceTree = "<group>"; };
 		32C1661F109DF105001852EE /* concept_names.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = concept_names.txt; sourceTree = "<group>"; };
 		32C16620109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_mpmc_unbound_locked_fifo_queue.h; sourceTree = "<group>"; };
 		32C16621109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = peak_mpmc_unbound_locked_fifo_queue.c; sourceTree = "<group>"; };
 		32C18718109F5E78001852EE /* amp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = amp.xcodeproj; path = build_env/xcode_3_2/amp/amp.xcodeproj; sourceTree = AMP; };
 		32C18725109F5ED9001852EE /* amp.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = amp.xcconfig; sourceTree = "<group>"; };
 		32C1872C10A075DD001852EE /* peak_stddef.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_stddef.h; sourceTree = "<group>"; };
-		32C1872D10A08F54001852EE /* peak_memory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_memory.h; sourceTree = "<group>"; };
-		32C1872E10A08F54001852EE /* peak_memory.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = peak_memory.c; sourceTree = "<group>"; };
+		32C1872D10A08F54001852EE /* peak_allocator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_allocator.h; sourceTree = "<group>"; };
+		32C1872E10A08F54001852EE /* peak_allocator.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = peak_allocator.c; sourceTree = "<group>"; };
 		32C1874F10A0991C001852EE /* peak_data_alignment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_data_alignment.h; sourceTree = "<group>"; };
 		32C1875010A0991C001852EE /* peak_data_alignment.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = peak_data_alignment.c; sourceTree = "<group>"; };
-		32C1877910A0CC6D001852EE /* pmem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pmem.h; sourceTree = "<group>"; };
-		32C1877A10A0CC6D001852EE /* pmem_generic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pmem_generic.c; sourceTree = "<group>"; };
-		32C1877C10A0CD72001852EE /* pmem_msvc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pmem_msvc.c; sourceTree = "<group>"; };
+		32C1877910A0CC6D001852EE /* peak_memory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_memory.h; sourceTree = "<group>"; };
+		32C1877A10A0CC6D001852EE /* peak_memory_generic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = peak_memory_generic.c; sourceTree = "<group>"; };
+		32C1877C10A0CD72001852EE /* peak_memory_msvc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = peak_memory_msvc.c; sourceTree = "<group>"; };
 		32C187BF10A0DD89001852EE /* peak_stdint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_stdint.h; sourceTree = "<group>"; };
+		32C86FB7119D591A007577DC /* peak_workload_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_workload_test.cpp; sourceTree = "<group>"; };
 		32CC03B0119BFEE80023723D /* peak_scheduler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_scheduler.h; sourceTree = "<group>"; };
 		32CC03B1119BFEE80023723D /* peak_scheduler.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = peak_scheduler.c; sourceTree = "<group>"; };
 		32CC03B6119C02940023723D /* peak_internal_scheduler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_internal_scheduler.h; sourceTree = "<group>"; };
@@ -306,17 +384,20 @@
 		321E22A2108C9A450080BFE6 /* peak */ = {
 			isa = PBXGroup;
 			children = (
-				32C1874F10A0991C001852EE /* peak_data_alignment.h */,
-				32C1875010A0991C001852EE /* peak_data_alignment.c */,
-				32C1872D10A08F54001852EE /* peak_memory.h */,
-				32C1872E10A08F54001852EE /* peak_memory.c */,
-				32C16620109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.h */,
-				32C16621109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.c */,
 				32C1872C10A075DD001852EE /* peak_stddef.h */,
 				32C187BF10A0DD89001852EE /* peak_stdint.h */,
-				32C1877910A0CC6D001852EE /* pmem.h */,
-				32C1877A10A0CC6D001852EE /* pmem_generic.c */,
-				32C1877C10A0CD72001852EE /* pmem_msvc.c */,
+				32B5AE1611F4B1D300D68EC5 /* peak_return_code.h */,
+				32C1874F10A0991C001852EE /* peak_data_alignment.h */,
+				32C1875010A0991C001852EE /* peak_data_alignment.c */,
+				32C1877910A0CC6D001852EE /* peak_memory.h */,
+				32C1877A10A0CC6D001852EE /* peak_memory_generic.c */,
+				32C1877C10A0CD72001852EE /* peak_memory_msvc.c */,
+				32C1872D10A08F54001852EE /* peak_allocator.h */,
+				32C1872E10A08F54001852EE /* peak_allocator.c */,
+				32B5AE1211F4ACBC00D68EC5 /* peak_allocator_utility.h */,
+				32B5AE1311F4ACBC00D68EC5 /* peak_allocator_utility.c */,
+				32C16620109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.h */,
+				32C16621109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.c */,
 				32F273971181EA05002CEA45 /* peak_dependency.h */,
 				32F2EDC7118C356500A0B9D7 /* peak_raw_dependency.h */,
 				32F2739B1181EA9A002CEA45 /* peak_internal_dependency.h */,
@@ -344,6 +425,7 @@
 				326776E910A19CD800CC7576 /* peak_mpmc_unbound_locked_fifo_queue_test.cpp */,
 				32F273951181E9F6002CEA45 /* peak_dependency_test.cpp */,
 				32D7834C1193011E005B5941 /* peak_scheduler_test.cpp */,
+				32C86FB7119D591A007577DC /* peak_workload_test.cpp */,
 				3224E8E510B2D5D10051F7D0 /* peak_compute_funcs_test.cpp */,
 			);
 			name = test;
@@ -375,9 +457,19 @@
 			isa = PBXGroup;
 			children = (
 				328DEBF4117C58A400F7A0C0 /* amp.framework */,
-				328DEBF6117C58A400F7A0C0 /* amp_unit_tests */,
+				328DEBF6117C58A400F7A0C0 /* amp_framework_test */,
+				32B58BC511F44ACE00D68EC5 /* amp_platform_check_framework_backend */,
 				328DEBF8117C58A400F7A0C0 /* libamp.a */,
-				328DEBFA117C58A400F7A0C0 /* amp_platform_check */,
+				32B58BC711F44ACE00D68EC5 /* amp_pthread_and_generic_broadcast_barriers_backend_test */,
+				32B58BC911F44ACE00D68EC5 /* amp_pthread_and_generic_signal_barriers_backend_test */,
+				32B58BCB11F44ACE00D68EC5 /* amp_pthread_and_libdispatch_semaphores_and_generic_broadcast_barriers_backend_test */,
+				32B58BCD11F44ACE00D68EC5 /* amp_pthread_and_libdispatch_semaphores_and_generic_signal_barriers_backend_test */,
+				32B58BCF11F44ACE00D68EC5 /* amp_pthread_and_posix_1003_1b_semaphores_and_generic_broadcast_barriers_backend_test */,
+				32B58BD111F44ACE00D68EC5 /* amp_pthread_and_posix_1003_1b_semaphores_and_generic_signal_barriers_backend_test */,
+				328DEBFA117C58A400F7A0C0 /* amp_platform_check_sysctl_backend */,
+				32B58BD311F44ACE00D68EC5 /* amp_platform_check_unknown_backend */,
+				32B58BD511F44ACE00D68EC5 /* amp_platform_check_sysconf_backend */,
+				32B58BD711F44ACE00D68EC5 /* amp_platform_check_cocoa_backend */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -408,11 +500,11 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				32D38BCB117C9D8600D03C80 /* pmem.h in Headers */,
+				32D38BCB117C9D8600D03C80 /* peak_memory.h in Headers */,
 				32D38BCC117C9D8700D03C80 /* peak_stdint.h in Headers */,
 				32D38BCD117C9D8700D03C80 /* peak_stddef.h in Headers */,
 				32D38BCE117C9D8800D03C80 /* peak_mpmc_unbound_locked_fifo_queue.h in Headers */,
-				32D38BD0117C9D8900D03C80 /* peak_memory.h in Headers */,
+				32D38BD0117C9D8900D03C80 /* peak_allocator.h in Headers */,
 				32D38BD2117C9D8B00D03C80 /* peak_data_alignment.h in Headers */,
 				32F273991181EA05002CEA45 /* peak_dependency.h in Headers */,
 				32F2739D1181EA9A002CEA45 /* peak_internal_dependency.h in Headers */,
@@ -421,6 +513,8 @@
 				32403FC7119AB87A007C0836 /* peak_workload.h in Headers */,
 				32CC03B2119BFEE80023723D /* peak_scheduler.h in Headers */,
 				32CC03B8119C02940023723D /* peak_internal_scheduler.h in Headers */,
+				32B5AE1411F4ACBC00D68EC5 /* peak_allocator_utility.h in Headers */,
+				32B5AE1711F4B1D300D68EC5 /* peak_return_code.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -537,10 +631,10 @@
 			remoteRef = 328DEBF3117C58A400F7A0C0 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		328DEBF6117C58A400F7A0C0 /* amp_unit_tests */ = {
+		328DEBF6117C58A400F7A0C0 /* amp_framework_test */ = {
 			isa = PBXReferenceProxy;
 			fileType = "compiled.mach-o.executable";
-			path = amp_unit_tests;
+			path = amp_framework_test;
 			remoteRef = 328DEBF5117C58A400F7A0C0 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
@@ -551,11 +645,81 @@
 			remoteRef = 328DEBF7117C58A400F7A0C0 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		328DEBFA117C58A400F7A0C0 /* amp_platform_check */ = {
+		328DEBFA117C58A400F7A0C0 /* amp_platform_check_sysctl_backend */ = {
 			isa = PBXReferenceProxy;
 			fileType = "compiled.mach-o.executable";
-			path = amp_platform_check;
+			path = amp_platform_check_sysctl_backend;
 			remoteRef = 328DEBF9117C58A400F7A0C0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		32B58BC511F44ACE00D68EC5 /* amp_platform_check_framework_backend */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = amp_platform_check_framework_backend;
+			remoteRef = 32B58BC411F44ACE00D68EC5 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		32B58BC711F44ACE00D68EC5 /* amp_pthread_and_generic_broadcast_barriers_backend_test */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = amp_pthread_and_generic_broadcast_barriers_backend_test;
+			remoteRef = 32B58BC611F44ACE00D68EC5 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		32B58BC911F44ACE00D68EC5 /* amp_pthread_and_generic_signal_barriers_backend_test */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = amp_pthread_and_generic_signal_barriers_backend_test;
+			remoteRef = 32B58BC811F44ACE00D68EC5 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		32B58BCB11F44ACE00D68EC5 /* amp_pthread_and_libdispatch_semaphores_and_generic_broadcast_barriers_backend_test */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = amp_pthread_and_libdispatch_semaphores_and_generic_broadcast_barriers_backend_test;
+			remoteRef = 32B58BCA11F44ACE00D68EC5 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		32B58BCD11F44ACE00D68EC5 /* amp_pthread_and_libdispatch_semaphores_and_generic_signal_barriers_backend_test */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = amp_pthread_and_libdispatch_semaphores_and_generic_signal_barriers_backend_test;
+			remoteRef = 32B58BCC11F44ACE00D68EC5 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		32B58BCF11F44ACE00D68EC5 /* amp_pthread_and_posix_1003_1b_semaphores_and_generic_broadcast_barriers_backend_test */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = amp_pthread_and_posix_1003_1b_semaphores_and_generic_broadcast_barriers_backend_test;
+			remoteRef = 32B58BCE11F44ACE00D68EC5 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		32B58BD111F44ACE00D68EC5 /* amp_pthread_and_posix_1003_1b_semaphores_and_generic_signal_barriers_backend_test */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = amp_pthread_and_posix_1003_1b_semaphores_and_generic_signal_barriers_backend_test;
+			remoteRef = 32B58BD011F44ACE00D68EC5 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		32B58BD311F44ACE00D68EC5 /* amp_platform_check_unknown_backend */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = amp_platform_check_unknown_backend;
+			remoteRef = 32B58BD211F44ACE00D68EC5 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		32B58BD511F44ACE00D68EC5 /* amp_platform_check_sysconf_backend */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = amp_platform_check_sysconf_backend;
+			remoteRef = 32B58BD411F44ACE00D68EC5 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		32B58BD711F44ACE00D68EC5 /* amp_platform_check_cocoa_backend */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = amp_platform_check_cocoa_backend;
+			remoteRef = 32B58BD611F44ACE00D68EC5 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		32DE769B117F8AB5003CA916 /* kaizen.framework */ = {
@@ -598,6 +762,7 @@
 				32F273961181E9F6002CEA45 /* peak_dependency_test.cpp in Sources */,
 				32F2EDF2118CC55500A0B9D7 /* peak_compute_funcs_test.cpp in Sources */,
 				32D7834D1193011E005B5941 /* peak_scheduler_test.cpp in Sources */,
+				32C86FB8119D591A007577DC /* peak_workload_test.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -605,14 +770,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				32D38BCA117C9D8600D03C80 /* pmem_generic.c in Sources */,
+				32D38BCA117C9D8600D03C80 /* peak_memory_generic.c in Sources */,
 				32D38BCF117C9D8900D03C80 /* peak_mpmc_unbound_locked_fifo_queue.c in Sources */,
-				32D38BD1117C9D8A00D03C80 /* peak_memory.c in Sources */,
+				32D38BD1117C9D8A00D03C80 /* peak_allocator.c in Sources */,
 				32D38BD3117C9D8B00D03C80 /* peak_data_alignment.c in Sources */,
 				32F2739A1181EA05002CEA45 /* peak_dependency.c in Sources */,
 				320919C0119020AD00779B37 /* peak_job.c in Sources */,
 				32403FC8119AB87A007C0836 /* peak_workload.c in Sources */,
 				32CC03B3119BFEE80023723D /* peak_scheduler.c in Sources */,
+				32B5AE1511F4ACBC00D68EC5 /* peak_allocator_utility.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

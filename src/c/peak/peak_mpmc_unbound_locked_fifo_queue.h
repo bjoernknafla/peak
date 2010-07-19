@@ -1,10 +1,33 @@
 /*
- *  peak_mpmc_unbound_locked_fifo_queue.h
- *  peak
+ * Copyright (c) 2009-2010, Bjoern Knafla
+ * http://www.bjoernknafla.com/
+ * All rights reserved.
  *
- *  Created by Björn Knafla on 01.11.09.
- *  Copyright 2009 Bjoern Knafla www.bjoernknafla.com. All rights reserved.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are 
+ * met:
  *
+ *   * Redistributions of source code must retain the above copyright 
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright 
+ *     notice, this list of conditions and the following disclaimer in the 
+ *     documentation and/or other materials provided with the distribution.
+ *   * Neither the name of the Bjoern Knafla 
+ *     Parallelization + AI + Gamedev Consulting nor the names of its 
+ *     contributors may be used to endorse or promote products derived from 
+ *     this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 
 /**
@@ -51,17 +74,18 @@
  * TODO: @todo Make sure that the queues last_produced and last_consumed
  *             pointers don't share the same cache line or false sharing will
  *             kill performance (even when going lock-free).
+ *
+ * TODO: @todo move the queue struct to a raw header if it needs to embedd
+ *             amp_raw_mutex_s directly.
  */
 
 #ifndef PEAK_peak_mpmc_unbound_locked_fifo_queue_H
 #define PEAK_peak_mpmc_unbound_locked_fifo_queue_H
 
-#include <stddef.h>
-
 #include <amp/amp_raw.h>
 
-#include <peak/peak_memory.h>
 #include <peak/peak_stddef.h>
+#include <peak/peak_allocator.h>
 #include <peak/peak_job.h>
 
 
@@ -116,13 +140,21 @@ extern "C" {
      * The queue functions don't allocate or deallocate memory directly, though
      * through system calls malloc and free might be called indirectly.
      *
-     * @attention sentry_node mustn't be NULL.
+     * @attention queue and sentry_node mustn't be NULL.
      *
      * @attention Don't call concurrently for the same or an already
      *            created (and not destroyed) queue.
      *
-     * @attention All nodes enqueued must be properly memory aligned to enable
-     *            atomic access.
+     * @attention All nodes enqueued must be properly memory aligned for the 
+     *            platform in useto enable atomic access.
+     *
+     * @return PEAK_SUCCESS on successful initialization.
+     *         PEAK_NOMEM might be returned if the system is missing the 
+     *         necessary memory to create internal synchronization primitives.
+     *         PEAK_ERROR might be returned if the system runs out of 
+     *         synchronization primitives or other system resources are scarce.
+     *         All other error codes that might be returned show programmer 
+     *         errors that must not happen.
      */
     int peak_mpmc_unbound_locked_fifo_queue_init(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
                                                  struct peak_unbound_fifo_queue_node_s *first_sentry_node);
@@ -134,14 +166,22 @@ extern "C" {
     /**
      * Finalizes the queue (but doesn't free the memory it uses) and hands back 
      * all remaining nodes including the current sentry node. If the nodes 
-     * aren't owned by another data structure free their memory via 
+     * aren't owned by another data structure you need to free their memory via 
      * peak_unbound_fifo_queue_node_clear_nodes otherwise memory leaks.
+     *
+     * queue and remaining_nodes must not be NULL.
      *
      * @attention Don't use a finalized queue again or init it before next use.
      *
      * @attention The pointer address of the pointer remaining_nodes points to
      *            will be changed - if *remaining_nodes pointed to data in 
      *            memory the reference is lost.
+     *
+     * @return PEAK_SUCCESS on successful finalization.
+     *         Other error codes might be returned and show programmer errors
+     *         that must not happen as the queue is subsequently unusable, e.g.:
+     *         PEAK_ERROR which might be used to signal that the
+     *         queue (its internal synchronization primitives) are still in use.
      */
     int peak_mpmc_unbound_locked_fifo_queue_finalize(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
                                                      struct peak_unbound_fifo_queue_node_s **remaining_nodes);
@@ -153,44 +193,75 @@ extern "C" {
     
     /**
      * Takes the remaining nodes handed back by finalize and frees their memory
-     * by calling dealloc with node_allocator for them.
+     * by calling the PEAK_DEALLOC with allocator on them.
+     * 
+     *
+     * @attention The same or a compatible allocator as the one used to allocate
+     *            the nodes must be used or behavior is undefined.
+     *
+     * @return PEAK_SUCCESS on successful freeing of nodes. nodes will point to
+     *         @c NULL.
+     *         Other error codes might be returned and show programmer errors
+     *         that must not happen as resources might be leaked, e.g.:
+     *         PEAK_ERROR or PEAK_DEALLOC specific error codes might be returned 
+     *         to show that an error occured trying to free the nodes. Memory
+     *         will not be leaked and the remaining nodes are assigned to
+     *         <code>*nodes</code>.
      */
-    int peak_unbound_fifo_queue_node_clear_nodes(struct peak_unbound_fifo_queue_node_s *nodes,
-                                                 void *node_allocator,
-                                                 peak_dealloc_func_t node_dealloc);
+    int peak_unbound_fifo_queue_node_clear_nodes(struct peak_unbound_fifo_queue_node_s **nodes,
+                                                 peak_allocator_t allocator);
    
     
 
     /**
-     * Sets is_empty to PEAK_TRUE if the queue is empty, otherwise sets it to 
-     * PEAK_FALSE.
+     * Returns PEAK_TRUE if the queue is empty, otherwise returns PEAK_FALSE.
+     *
+     * queue must not be NULL.
      *
      * @attention Checking for emptyness is an expensive operation that 
      *            decreases the performance of concurrently ongoing pushes
-     *            and pops.
+     *            and pops - use sparringly if at all.
      */
-    int peak_mpmc_unbound_locked_fifo_queue_is_empty(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
+    PEAK_BOOL peak_mpmc_unbound_locked_fifo_queue_is_empty(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
                                                      PEAK_BOOL *is_empty);
     
 
     
     /**
-     * Enqueues node at the producer end of the queue and takes over ownership
-     * of node.
+     * Enqueues the node chain from add_first_node to add_last_node with 
+     * add_first_node being attached to the last produced node in the queue and 
+     * add_last_node becoming the new last produced node of the queue. The queue 
+     * takes ownershop of the chain of nodes. 
      *
-     * @attention node mustn't be NULL.
+     * add_first_node must be connected via a chain of nodes with add_last_node.
+     * add_first_node and add_last_node can be the same.
+     *
+     * add_last_node's next field must be NULL or behavior is undefined.
+     *
+     * The chain of nodes must be valid, e.g. without holes and without cycles
+     * or behavior is undefined.
+     *
+     * @attention queue, head_node, and tail_node mustn't be NULL.
      *
      * @attention All nodes enqueued must be properly memory aligned to enable
      *            atomic access.
+     *
+     * @return PEAK_SUCCESS on successful push of the chain of nodes onto the
+     *         queue.
+     *
+     * While this queue trypush only returns a single return code it nonetheless
+     * has a return value as other trypush implementations might need to return
+     * an error code to state that the queue is full.
      */
-    int peak_mpmc_unbound_locked_fifo_queue_push(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
-                                                 struct peak_unbound_fifo_queue_node_s *node);
+    int peak_mpmc_unbound_locked_fifo_queue_trypush(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
+                                                    struct peak_unbound_fifo_queue_node_s *add_first_node,
+                                                    struct peak_unbound_fifo_queue_node_s *add_last_node);
     
     
     /**
      * Dequeues the first non-consumed node and hands over ownership to the node
-     * to the caller. If no unconsumed node is contained while calling NULL is
-     * returned.
+     * to the caller. If no unconsumed node is contained while calling then NULL
+     * is returned.
      *
      * TODO: @todo Decide if to return a node via the return value or to return
      *             an error code and pass the code via a function parameter

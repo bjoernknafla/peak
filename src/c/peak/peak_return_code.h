@@ -30,40 +30,46 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/**
- * @file
- *
- * Wrapper to provide C99 stdint types like uint8_t, uintptr_t, int64_t, etc.
- * even on Windows via MSVC.
- *
- * This header is far from complete and only a stopgap solution to move
- * further with more important issues.
- *
- * TODO: @todo Make this solution less hacky - eventually use poc. Currently
- *             only uintptr_t is used...
- */
+#ifndef PEAK_peak_return_code_H
+#define PEAK_peak_return_code_H
 
-#ifndef PEAK_peak_stdint_H
-#define PEAK_peak_stdint_H
 
-#if defined(PEAK_USE_MSVC)
-#   include <windows.h>
-#else
-#   include <stdint.h>
-#endif
+#include <amp/amp_return_code.h>
+
 
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
-
     
+    
+    /**
+     * Return codes used by amp.
+     */
+    enum peak_return_code {
+        peak_success_return_code = amp_success_return_code, /**< Operation successful */
+        peak_nomem_return_code = amp_nomem_return_code, /**< Not enough memory */
+        peak_busy_return_code = amp_busy_return_code, /**< Resource in use by other thread */
+        peak_unsupported_return_code = amp_unsupported_return_code, /**< Operation not supported by backend */
+        peak_timeout_return_code = amp_timeout_return_code, /**< Waited on busy resource till timeout */
+        peak_error_return_code = amp_error_return_code /**< Another error occured */
+    };
+    
+    typedef enum peak_return_code peak_return_code_t;
+    
+    
+#define PEAK_SUCCESS (peak_success_return_code)
+#define PEAK_NOMEM (peak_nomem_return_code)
+#define PEAK_BUSY (peak_busy_return_code)
+#define PEAK_TIMEOUT (peak_timeout_return_code)
+#define PEAK_UNSUPPORTED (peak_unsupported_return_code)
+#define PEAK_ERROR (peak_error_return_code)
     
     
     
 #if defined(__cplusplus)
 } /* extern "C" */
 #endif
-        
 
-#endif /* PEAK_peak_stdint_H */
+
+#endif /* PEAK_peak_return_code_H */

@@ -30,40 +30,54 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/**
- * @file
- *
- * Wrapper to provide C99 stdint types like uint8_t, uintptr_t, int64_t, etc.
- * even on Windows via MSVC.
- *
- * This header is far from complete and only a stopgap solution to move
- * further with more important issues.
- *
- * TODO: @todo Make this solution less hacky - eventually use poc. Currently
- *             only uintptr_t is used...
- */
 
-#ifndef PEAK_peak_stdint_H
-#define PEAK_peak_stdint_H
 
-#if defined(PEAK_USE_MSVC)
-#   include <windows.h>
-#else
-#   include <stdint.h>
-#endif
+
+#ifndef PEAK_peak_memory_utility_H
+#define PEAK_peak_memory_utility_H
+
+
+#include <peak/peak_allocator.h>
+#include <amp/amp_memory.h>
+
 
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
+
+    /**
+     * Copies the non-aligned allocation settings from source to target 
+     * (replacing the old settings in effect).
+     *
+     * source and target must not be @c NULL or behavior is undefined.
+     *
+     * @return PEAK_SUCCESS if copying is successful. Otherwise returns
+     *         PEAK_ERROR, e.g. if target is amp_default_allocator.
+     */
+    int peak_convert_peak_to_amp_allocator(peak_allocator_t source,
+                                           amp_allocator_t target);
     
+    
+    /**
+     * Copies the allocator content from source to the non-aligned allocator
+     * settings of target (replacing the old settings in effect) while keeping
+     * the old target settings for aligned allocation.
+     *
+     * source and target must not be @c NULL or behavior is undefined.
+     *
+     * @return PEAK_SUCCESS if copying is successful. Otherwise returns
+     *         PEAK_ERROR, e.g. if target is amp_default_allocator.
+     */
+    int peak_convert_from_amp_to_peak_allocator(amp_allocator_t source,
+                                                peak_allocator_t target);
     
     
     
 #if defined(__cplusplus)
 } /* extern "C" */
 #endif
-        
 
-#endif /* PEAK_peak_stdint_H */
+
+#endif /* PEAK_peak_memory_utility_H */
