@@ -59,8 +59,12 @@ extern "C" {
      * dependency must be valid and not NULL. result must not be NULL. If one of the
      * arguments is invalid behavior is undefined.
      *
-     * Returns PEAK_SUCCESS at success. If one of the arguments is invalid or NULL
-     * returns EINVAL.
+     * @return PEAK_SUCCESS if the dependency count is successfully assigned to
+     *         result.
+     *         Other error codes might be returned and show programmer errors
+     *         that must not happen as resources might be leaked, e.g.:
+     *         PEAK_ERROR might be returned if dependency isn't valid or not
+     *         correctly initialized.
      */
     int peak_internal_dependency_get_dependency_count(peak_dependency_t dependency, 
                                                       uint64_t* result);
@@ -72,8 +76,12 @@ extern "C" {
      * dependency must be valid and not NULL. result must not be NULL. If one of the
      * arguments is invalid behavior is undefined.
      *
-     * Returns PEAK_SUCCESS at success. If one of the arguments is invalid or NULL
-     * returns EINVAL.
+     * @return PEAK_SUCCESS if the waiting count is successfully assigned to
+     *         result.
+     *         Other error codes might be returned and show programmer errors
+     *         that must not happen as resources might be leaked, e.g.:
+     *         PEAK_ERROR might be returned if dependency isn't valid or not
+     *         correctly initialized.
      */
     int peak_internal_dependency_get_waiting_count(peak_dependency_t dependency, 
                                                    uint64_t* result);

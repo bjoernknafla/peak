@@ -81,24 +81,72 @@ extern "C" {
     typedef struct peak_raw_dependency_s* peak_dependency_t;
     
     
-    
+    /**
+     * Creates a dependency by allocating memory and initializing it.
+     * On error no memory is leaked.
+     *
+     * Only call for an uninitialized dependency and only from one thread
+     * for the same dependency.
+     *
+     * dependency must not be NULL.
+     * allocator must be a valid allocator.
+     *
+     * On error no dependency is created and no resources are leaked.
+     *
+     * @return PEAK_SUCCESS on successful creation of a dependency.
+     *         PEAK_NOMEM is returned if not enough memory is available.
+     *         PEAK_ERROR is returned if internal platform resources needed
+     *         for the dependency implementation aren't available.
+     *         Other error codes might be returned and show programmer errors
+     *         which must not happen, e.g. the dealloc function of allocator
+     *         is faulty.
+     */
     int peak_dependency_create(peak_dependency_t* dependency,
                                peak_allocator_t allocator);
     
     
-    int peak_dependency_destroy(peak_dependency_t dependency,
+    /**
+     * Finalizes dependency, frees the memory it used, and sets 
+     * <code>*dependency</code> to @c NULL.
+     *
+     * dependency and allocator must be valid and not NULL.
+     *
+     * dependency must not be in use anymore (no threads waiting on it).
+     *
+     * Do not call from multiple threads for the same dependency at the same 
+     * time.
+     *
+     * @return PEAK_SUCCESS on successful finalization and freeing of dependency
+     *         memory.
+     *         Other error codes might be returned and show programmer errors
+     *         that must not happen as resources might be leaked, e.g.:
+     *         PEAK_BUSY and/or PEAK_ERROR are returned if the dependency is
+     *         still in use. PEAK_ERROR might be returned if dependency is not
+     *         valid.
+     *         Other error codes might be returned if allocator is not valid,
+     *         e.g. calling dealloc with it returns an error.
+     */
+    int peak_dependency_destroy(peak_dependency_t* dependency,
                                 peak_allocator_t allocator);
     
     
     
     /**
-     * Increments the dependency by one and returns PEAK_SUCCESS.
+     * Increments the dependency count by one.
      *
-     * dependency must not be NULL or invalid or behavior is undefined (EINVAL
-     * might be returned).
+     * dependency must not be NULL or invalid or behavior is undefined.
      *
      * Do not increase the dependency more than INT_MAX times (preliminary rule),
-     * otherwise behavior is undefined, for example ERANGE might be returned.
+     * otherwise behavior is undefined, probably PEAK_OUT_OF_RANGE might be 
+     * returned.
+     *
+     * @return PEAK_SUCCESS on successful increase of dependecy count.
+     *         Other error codes might be returned and show programmer errors
+     *         that must not happen as resources might be leaked, e.g.:
+     *         PEAK_OUT_OF_RANGE is returned if the internal counter would
+     *         overflow.
+     *
+     * TODO: @todo Decide if to add a pointer to return the last counter value.
      */
     int peak_dependency_increase(peak_dependency_t dependency);
     
@@ -111,9 +159,14 @@ extern "C" {
      *             copied and enqueued whenever the dependency hits zero.
      *
      * Do not decrease the dependency more often than it has been increased,
-     * otherwise behavior is undefined, for example ERANGE might be returned.
+     * otherwise behavior is undefined.
+     *
+     * @return PEAK_SUCCESS on successful dependency counter decrement.
+     *
+     * TODO: @todo Decide if to add a pointer to return the last counter value.
      */
     int peak_dependency_decrease(peak_dependency_t dependency);
+    
     
     
     /* Not implemented yet int peak_dependency_add_zero_job(); if dependency is zero while setting the job it is immediately enqueued. Multiple jobs can be added - but not removed! */
@@ -124,10 +177,14 @@ extern "C" {
     /* Not implemented yet int peak_dependency_set_name(); */
     /* Not implemented yet int peak_dependency_get_name(); */
     
+    
+    
     /**
      * Waits by blocking the thread till the dependency is fulfilled (it's
      * internal counter reaches zero) (if it isn't already), then returns with 
-     * return code PEAK_SUCCESS. Returns EINVAL if the dependency is not valid.
+     * return code PEAK_SUCCESS.
+     *
+     * dependency must be valid, e.g. correctly initialized and not @c NULL.
      *
      * All threads or tasks waiting on a dependency are signalled and return 
      * when the dependency reaches zero even if the dependency is increased 
@@ -140,6 +197,9 @@ extern "C" {
      *
      * The implementation might actively  service jobs from queues internally
      * while waiting for the dependency to reach zero.
+     *
+     * @return PEAK_SUCCESS on successful end of the wait for dependency count
+     *         to hit @c 0.
      */
     int peak_dependency_wait(peak_dependency_t dependency);
 

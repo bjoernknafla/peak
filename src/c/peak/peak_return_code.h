@@ -33,6 +33,7 @@
 #ifndef PEAK_peak_return_code_H
 #define PEAK_peak_return_code_H
 
+#include <errno-h>
 
 #include <amp/amp_return_code.h>
 
@@ -52,6 +53,7 @@ extern "C" {
         peak_busy_return_code = amp_busy_return_code, /**< Resource in use by other thread */
         peak_unsupported_return_code = amp_unsupported_return_code, /**< Operation not supported by backend */
         peak_timeout_return_code = amp_timeout_return_code, /**< Waited on busy resource till timeout */
+        peak_out_of_range_return_code = ERANGE, /**< Result is out of range */
         peak_error_return_code = amp_error_return_code /**< Another error occured */
     };
     
@@ -63,6 +65,7 @@ extern "C" {
 #define PEAK_BUSY (peak_busy_return_code)
 #define PEAK_TIMEOUT (peak_timeout_return_code)
 #define PEAK_UNSUPPORTED (peak_unsupported_return_code)
+#define PEAK_OUT_OF_RANGE (peak_out_of_range_return_code)
 #define PEAK_ERROR (peak_error_return_code)
     
     

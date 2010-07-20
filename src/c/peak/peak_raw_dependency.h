@@ -70,34 +70,16 @@ extern "C" {
     
     
     /**
-     * Initializes the dependency and sets it's counter to zero to symbolize
-     * that it's fulfilled and returns PEAK_SUCCESS.
-     *
-     * Returns EINVAL if dependency is NULL or invalid, and returns EAGAIN, 
-     * EBUSY, or ENOMEM if the system doesn't have enough resources to create
-     * the internals of the dependency.
-     *
-     * Not thread-safe, do not call concurrently for the same dependency.
-     *
-     * dependency must not be NULL or invalid or behavior is undefined (EINVAL
-     * might be returned).
+     * Initializes dependency, other than not allocating memory see 
+     * peak_dependency_create for more info.
      */
-    int peak_raw_dependency_init(struct peak_raw_dependency_s* dependency);
+    int peak_raw_dependency_init(peak_dependency_t dependency);
     
     /**
-     * Finalizes the dependency but does not free its memory and returns 
-     * PEAK_SUCCESS on successful finalization.
-     *
-     * If dependency is NULL, invalid, or if it is detected that it is still in
-     * use then EINVAL or EBUSY are returned to signal an error.
-     *
-     * Not thread-safe, do not call concurrently for the same dependency or
-     * while other functions potentially access the dependency.
-     *
-     * dependency must not be NULL or invalid or behavior is undefined (EINVAL
-     * might be returned).
+     * Finalizes dependency but does not free its memory, see 
+     * peak_dependency_destroy for more info.
      */
-    int peak_raw_dependency_finalize(struct peak_raw_dependency_s* dependency);
+    int peak_raw_dependency_finalize(peak_dependency_t dependency);
     
 
 

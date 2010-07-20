@@ -116,70 +116,70 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = 323B8D1611E32B760024B211 /* amp_platform_check_framework_backend */;
+			remoteGlobalIDString = 323B8D1611E32B760024B211;
 			remoteInfo = amp_platform_check_framework_backend;
 		};
 		32B58BC611F44ACE00D68EC5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = 32F7EC8F11E26CA1005291E8 /* amp_pthread_and_generic_broadcast_barriers_backend_test */;
+			remoteGlobalIDString = 32F7EC8F11E26CA1005291E8;
 			remoteInfo = amp_pthread_and_generic_broadcast_barriers_backend_test;
 		};
 		32B58BC811F44ACE00D68EC5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = 32F7ECE111E27018005291E8 /* amp_pthread_and_generic_signal_barriers_backend_test */;
+			remoteGlobalIDString = 32F7ECE111E27018005291E8;
 			remoteInfo = amp_pthread_and_generic_signal_barriers_backend_test;
 		};
 		32B58BCA11F44ACE00D68EC5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = 32F7ED0C11E270DB005291E8 /* amp_pthread_and_libdispatch_semaphores_and_generic_broadcast_barriers_backend_test */;
+			remoteGlobalIDString = 32F7ED0C11E270DB005291E8;
 			remoteInfo = amp_pthread_and_libdispatch_semaphores_and_generic_broadcast_barriers_backend_test;
 		};
 		32B58BCC11F44ACE00D68EC5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = 32F7ED3711E2718B005291E8 /* amp_pthread_and_libdispatch_semaphores_and_generic_signal_barriers_backend_test */;
+			remoteGlobalIDString = 32F7ED3711E2718B005291E8;
 			remoteInfo = amp_pthread_and_libdispatch_semaphores_and_generic_signal_barriers_backend_test;
 		};
 		32B58BCE11F44ACE00D68EC5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = 32F7ED6111E2726A005291E8 /* amp_pthread_and_posix_1003_1b_semaphores_and_generic_broadcast_barriers_backend_test */;
+			remoteGlobalIDString = 32F7ED6111E2726A005291E8;
 			remoteInfo = amp_pthread_and_posix_1003_1b_semaphores_and_generic_broadcast_barriers_backend_test;
 		};
 		32B58BD011F44ACE00D68EC5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = 32F7ED9511E273F7005291E8 /* amp_pthread_and_posix_1003_1b_semaphores_and_generic_signal_barriers_backend_test */;
+			remoteGlobalIDString = 32F7ED9511E273F7005291E8;
 			remoteInfo = amp_pthread_and_posix_1003_1b_semaphores_and_generic_signal_barriers_backend_test;
 		};
 		32B58BD211F44ACE00D68EC5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = 323B8CDE11E32AA10024B211 /* amp_platform_check_unknown_backend */;
+			remoteGlobalIDString = 323B8CDE11E32AA10024B211;
 			remoteInfo = amp_platform_check_unknown_backend;
 		};
 		32B58BD411F44ACE00D68EC5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = 323B8CF111E32AF10024B211 /* amp_platform_check_sysconf_backend */;
+			remoteGlobalIDString = 323B8CF111E32AF10024B211;
 			remoteInfo = amp_platform_check_sysconf_backend;
 		};
 		32B58BD611F44ACE00D68EC5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 32C18718109F5E78001852EE /* amp.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = 323B8CFF11E32B170024B211 /* amp_platform_check_cocoa_backend */;
+			remoteGlobalIDString = 323B8CFF11E32B170024B211;
 			remoteInfo = amp_platform_check_cocoa_backend;
 		};
 		32D38B4E117C6F9100D03C80 /* PBXContainerItemProxy */ = {
