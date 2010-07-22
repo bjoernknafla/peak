@@ -36,18 +36,18 @@
 #include <cstddef>
 
 #include <peak/peak_data_alignment.h>
-#include <peak/pmem.h>
+#include <peak/peak_memory.h>
 
 
 
-SUITE(pmem)
+SUITE(peak_memory)
 {
     TEST(zero_is_alogned)
     {
         CHECK(peak_is_aligned(NULL, PEAK_ATOMIC_ACCESS_ALIGNMENT));
     }
     
-    TEST(pmem_malloc_aligned)
+    TEST(peak_malloc_aligned)
     {
         std::size_t const main_alloc_testruns = 100;
         
@@ -57,9 +57,9 @@ SUITE(pmem)
                 
                 std::size_t const alignment = (1u << p);
                 for (std::size_t msize = 4; msize < ((1u << 12) + 1); msize *= 2) {
-                    void *m = pmem_malloc_aligned(alignment, msize);
+                    void *m = peak_malloc_aligned(alignment, msize);
                     CHECK(peak_is_aligned(m, alignment));
-                    pmem_free_aligned(m);
+                    peak_free_aligned(m);
                 }
             }
             
@@ -67,7 +67,7 @@ SUITE(pmem)
     }
     
     
-    TEST(pmem_calloc_aligned)
+    TEST(peak_calloc_aligned)
     {
         std::size_t const main_alloc_testruns = 100;
         
@@ -77,15 +77,15 @@ SUITE(pmem)
                 
                 std::size_t const alignment = (1u << p);
                 
-                for (std::size_t elem_count = 1; elem_count < ((1u << 24) + 1); elem_count *= 2) {
+                for (std::size_t elem_count = 1; elem_count < ((1u << 8) + 1); elem_count *= 2) {
                     
-                    for (std::size_t elem_size = 1; elem_size < ((1u << 12) + 1); elem_count *= 2) {
+                    for (std::size_t elem_size = 1; elem_size < ((1u << 6) + 1); elem_size *= 2) {
                         
-                        void *m = pmem_calloc_aligned(alignment, 
+                        void *m = peak_calloc_aligned(alignment, 
                                                       elem_count,
                                                       elem_size);
                         CHECK(peak_is_aligned(m, alignment));
-                        pmem_free_aligned(m);
+                        peak_free_aligned(m);
                     
                     }
                     
@@ -98,6 +98,6 @@ SUITE(pmem)
     
     
     
-} // SUITE(pmem)
+} // SUITE(peak_memory)
 
 

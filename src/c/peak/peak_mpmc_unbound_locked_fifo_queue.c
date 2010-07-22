@@ -47,50 +47,8 @@
 #include <stddef.h>
 
 #include "peak_stddef.h"
+#include "peak_return_code.h"
 #include "peak_data_alignment.h"
-
-
-/**
- * Returns PEAK_TRUE if tail_node is reacheable from head_node, otherwise
- * returns PEAK_FALSE.
- *
- * Also returns PEAK_FALSE if even one node in the chain isn't properly aligned.
- *
- * Does not check if tail_node's next field is NULL to enable testing of 
- * sub-chains.
- *
- * @attention Does not detect cycles!
- */
-static PEAK_BOOL peak_internal_node_chain_is_valid(struct peak_unbound_fifo_queue_node_s const* head_node,
-                                                   struct peak_unbound_fifo_queue_node_s const* tail_node);
-static PEAK_BOOL peak_internal_node_chain_is_valid(struct peak_unbound_fifo_queue_node_s const* head_node,
-                                                   struct peak_unbound_fifo_queue_node_s const* tail_node)
-{    
-    struct peak_unbound_fifo_queue_node_s const* node = head_node;
-    PEAK_BOOL retval = PEAK_FALSE;
-    
-    while (NULL != node) {
-        
-        if (PEAK_FALSE == peak_is_aligned(node, 
-                                          PEAK_ATOMIC_ACCESS_ALIGNMENT)) {
-            
-            break;
-        }
-        
-        if (NULL != node->next) {
-            node = node->next;
-        } else {
-            
-            if (tail_node == node) {
-                retval = PEAK_SUCCESS;
-            }
-            
-            break;
-        }
-    }
-    
-    return retval;
-}
 
 
 
@@ -183,8 +141,8 @@ int peak_mpmc_unbound_locked_fifo_queue_finalize(struct peak_mpmc_unbound_locked
     retval2 = amp_raw_mutex_finalize(&queue->producer_mutex);
     
     assert(AMP_SUCCESS == retval0);
+    assert(AMP_SUCCESS == retval1);
     assert(AMP_SUCCESS == retval2);
-    assert(AMP_SUCCESS == retval3);
     
     if (AMP_SUCCESS != retval0
         || AMP_SUCCESS != retval1
@@ -200,7 +158,35 @@ int peak_mpmc_unbound_locked_fifo_queue_finalize(struct peak_mpmc_unbound_locked
 
 
 
-int peak_unbound_fifo_queue_node_clear_nodes(struct peak_unbound_fifo_queue_node_s **nodes,
+PEAK_BOOL peak_unbound_fifo_queue_node_is_chain_valid(struct peak_unbound_fifo_queue_node_s const* chain_start_node,
+                                                      struct peak_unbound_fifo_queue_node_s const* chain_end_node)
+{    
+    struct peak_unbound_fifo_queue_node_s const* node = chain_start_node;
+    PEAK_BOOL retval = PEAK_FALSE;
+    
+    while (NULL != node) {
+        
+        if (PEAK_FALSE == peak_is_aligned(node, 
+                                          PEAK_ATOMIC_ACCESS_ALIGNMENT)) {
+            
+            break;
+        }
+        
+        if (node == chain_end_node) {
+            retval = PEAK_TRUE;
+            break;
+        } else {
+            node = node->next;
+        }
+        
+    }
+    
+    return retval;
+}
+
+
+
+int peak_unbound_fifo_queue_node_destroy_nodes(struct peak_unbound_fifo_queue_node_s **nodes,
                                              peak_allocator_t allocator)
 {
     int retval = PEAK_SUCCESS;
@@ -233,7 +219,7 @@ int peak_unbound_fifo_queue_node_clear_nodes(struct peak_unbound_fifo_queue_node
 PEAK_BOOL peak_mpmc_unbound_locked_fifo_queue_is_empty(struct peak_mpmc_unbound_locked_fifo_queue_s *queue)
 {
     int internal_retval = AMP_ERROR;
-    PEAK_BOOL retval = AMP_FALSE;
+    PEAK_BOOL retval = PEAK_FALSE;
     
     assert(NULL != queue);
 
@@ -272,10 +258,10 @@ int peak_mpmc_unbound_locked_fifo_queue_trypush(struct peak_mpmc_unbound_locked_
     assert(NULL != add_first_node);
     assert(NULL != add_last_node);
     assert(NULL == add_last_node->next);
-    assert(PEAK_TRUE == peak_internal_node_chain_is_valid(head_node, tail_node));
+    assert(PEAK_TRUE == peak_unbound_fifo_queue_node_is_chain_valid(add_first_node, add_last_node));
     assert(peak_is_aligned((queue->last_produced), PEAK_ATOMIC_ACCESS_ALIGNMENT));
     assert(peak_is_aligned((queue->last_produced->next), PEAK_ATOMIC_ACCESS_ALIGNMENT));
-    assert(peak_internal_node_chain_is_valid(add_first_node, add_last_node));
+    assert(peak_unbound_fifo_queue_node_is_chain_valid(add_first_node, add_last_node));
     
     add_last_node->next = NULL;
     

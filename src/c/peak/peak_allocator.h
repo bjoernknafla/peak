@@ -320,9 +320,9 @@ extern "C" {
                               peak_calloc_func_t calloc_func,
                               peak_dealloc_func_t dealloc_func,
                               void* allocator_aligned_context,
-                              peak_alloc_func_t alloc_aligned_func,
-                              peak_calloc_func_t calloc_aligned_func,
-                              peak_dealloc_func_t dealloc_aligned_func);
+                              peak_alloc_aligned_func_t alloc_aligned_func,
+                              peak_calloc_aligned_func_t calloc_aligned_func,
+                              peak_dealloc_aligned_func_t dealloc_aligned_func);
     
     
     /**

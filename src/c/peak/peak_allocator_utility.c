@@ -32,6 +32,8 @@
 
 #include "peak_allocator_utility.h"
 
+#include <assert.h>
+
 #include "peak_return_code.h"
 
 

@@ -51,10 +51,9 @@
 #include <cstddef>
 
 #include <amp/amp.h>
-#include <amp/amp_raw.h>
 
-#include <peak/peak_stddef.h>
-#include <peak/peak_memory.h>
+#include <peak/peak_return_code.h>
+#include <peak/peak_allocator.h>
 #include <peak/peak_dependency.h>
 #include <peak/peak_internal_dependency.h>
 
@@ -66,17 +65,13 @@ SUITE(peak_dependency)
     TEST(sequential_init_and_finalize)
     {
         peak_dependency_t dependency = NULL;
-        int errc = peak_dependency_create(&dependency, 
-                                          NULL, 
-                                          peak_malloc, 
-                                          peak_free);
+        int errc = peak_dependency_create(&dependency,
+                                          PEAK_DEFAULT_ALLOCATOR);
         CHECK_EQUAL(PEAK_SUCCESS, errc);
         CHECK(NULL != dependency);
         
-        errc = peak_dependency_destroy(dependency, 
-                                       NULL, 
-                                       peak_malloc,
-                                       peak_free);
+        errc = peak_dependency_destroy(&dependency,
+                                       PEAK_DEFAULT_ALLOCATOR);
         CHECK_EQUAL(PEAK_SUCCESS, errc);
     }
     
@@ -85,19 +80,15 @@ SUITE(peak_dependency)
     {
         peak_dependency_t dependency = NULL;
         int errc = peak_dependency_create(&dependency,
-                                          NULL, 
-                                          peak_malloc, 
-                                          peak_free);
+                                          PEAK_DEFAULT_ALLOCATOR);
         assert(PEAK_SUCCESS == errc);
         assert(NULL != dependency);
         
         errc = peak_dependency_wait(dependency);
         CHECK_EQUAL(PEAK_SUCCESS, errc);
         
-        errc = peak_dependency_destroy(dependency, 
-                                       NULL, 
-                                       peak_malloc,
-                                       peak_free);
+        errc = peak_dependency_destroy(&dependency,
+                                       PEAK_DEFAULT_ALLOCATOR);
         assert(PEAK_SUCCESS == errc);
     }
     
@@ -133,51 +124,27 @@ SUITE(peak_dependency)
     TEST(parallel_init_and_wait)
     {
         peak_dependency_t dependency = NULL;
-        int errc = peak_dependency_create(&dependency, 
-                                          NULL, 
-                                          &peak_malloc, 
-                                          &peak_free);
+        int errc = peak_dependency_create(&dependency,
+                                          PEAK_DEFAULT_ALLOCATOR);
         assert(PEAK_SUCCESS == errc);
         assert(NULL != dependency);
         
-        amp_thread_group_t waiting_group;
-        
-        struct amp_thread_group_context_s waiting_group_context;
-        errc = amp_thread_group_context_init(&waiting_group_context,
-                                             NULL,
-                                             &peak_malloc, 
-                                             &peak_free);
-        assert(AMP_SUCCESS == errc);
-        
-        
-        amp_raw_platform_s platform;
-        errc = amp_raw_platform_init(&platform,
-                                     NULL,
-                                     &peak_malloc,
-                                     &peak_free);
+        amp_platform_t platform = AMP_PLATFORM_UNINITIALIZED;
+        errc = amp_platform_create(&platform,
+                                   AMP_DEFAULT_ALLOCATOR);
         assert(AMP_SUCCESS == errc);
         
         std::size_t waiting_thread_count = 0;
-        errc = amp_raw_platform_get_active_hwthread_count(&platform,
-                                                          &waiting_thread_count);
-        if (AMP_SUCCESS != errc) {
-            errc = amp_raw_platform_get_active_core_count(&platform,
-                                                          &waiting_thread_count);
-            if (AMP_SUCCESS != errc) {
-                errc = amp_raw_platform_get_installed_hwthread_count(&platform,
-                                                                     &waiting_thread_count);
-                if (AMP_SUCCESS != errc) {
-                    errc = amp_raw_platform_get_installed_core_count(&platform,
-                                                                     &waiting_thread_count);
-                }
-            }
-        }
+        errc = amp_platform_get_concurrency_level(platform,
+                                                  &waiting_thread_count);
+        assert(AMP_SUCCESS == errc);
         
         if (waiting_thread_count == 0) {
             waiting_thread_count = 16;
         }
         
-        errc = amp_raw_platform_finalize(&platform);
+        errc = amp_platform_destroy(&platform,
+                                    AMP_DEFAULT_ALLOCATOR);
         assert(AMP_SUCCESS == errc);
         
         std::vector<wait_on_dependency_context> thread_contexts(waiting_thread_count);
@@ -188,24 +155,27 @@ SUITE(peak_dependency)
         }
         
         
-        
-        struct amp_raw_byte_range_s waiting_threads_context_range;
-        errc = amp_raw_byte_range_init_with_item_count(&waiting_threads_context_range,
-                                                       &thread_contexts[0],
-                                                       waiting_thread_count,
-                                                       sizeof(wait_on_dependency_context));
+        amp_thread_array_t waiting_group = AMP_THREAD_ARRAY_UNINITIALIZED;
+        errc = amp_thread_array_create(&waiting_group, 
+                                       AMP_DEFAULT_ALLOCATOR,
+                                       waiting_thread_count);
         assert(AMP_SUCCESS == errc);
         
-        errc = amp_thread_group_create_with_single_func(&waiting_group,
-                                                        &waiting_group_context,
-                                                        waiting_thread_count,
-                                                        &waiting_threads_context_range,
-                                                        &amp_raw_byte_range_next,
-                                                        &wait_on_dependency_func);
-        assert(AMP_SUCCESS == errc);
+        for (std::size_t i = 0; i < waiting_thread_count; ++i) {
+            errc = amp_thread_array_configure(waiting_group,
+                                              i,
+                                              1,
+                                              &thread_contexts[i],
+                                              &wait_on_dependency_func);
+            assert(AMP_SUCCESS == errc);
+        }
+        
+        
+        
+        
         
         std::size_t launched_count = 0;
-        errc = amp_thread_group_launch_all(waiting_group,
+        errc = amp_thread_array_launch_all(waiting_group,
                                            &launched_count);
         assert(AMP_SUCCESS == errc);
         assert(launched_count == waiting_thread_count);
@@ -214,17 +184,13 @@ SUITE(peak_dependency)
         // will pass it without active waiting.
         
         std::size_t joined_thread_count = 0;
-        errc = amp_thread_group_join_all(waiting_group,
+        errc = amp_thread_array_join_all(waiting_group,
                                          &joined_thread_count);
         assert(AMP_SUCCESS == errc);
         assert(joined_thread_count == 0);
         
-        errc = amp_thread_group_destroy(waiting_group,
-                                        &waiting_group_context);
-        assert(AMP_SUCCESS == errc);
-        waiting_group = NULL;
-        
-        errc = amp_thread_group_context_finalize(&waiting_group_context);
+        errc = amp_thread_array_destroy(&waiting_group,
+                                        AMP_DEFAULT_ALLOCATOR);
         assert(AMP_SUCCESS == errc);
         
         for (std::size_t i = 0; i < waiting_thread_count; ++i) {
@@ -232,12 +198,9 @@ SUITE(peak_dependency)
             CHECK_EQUAL(true, thread_contexts[i].after_wait_reached);
         }
         
-        errc = peak_dependency_destroy(dependency,
-                                       NULL,
-                                       &peak_malloc,
-                                       &peak_free);
+        errc = peak_dependency_destroy(&dependency,
+                                       PEAK_DEFAULT_ALLOCATOR);
         assert(PEAK_SUCCESS == errc);
-        dependency = NULL;
     }
     
     
@@ -247,44 +210,23 @@ SUITE(peak_dependency)
     {
         peak_dependency_t dependency = NULL;
         int errc = peak_dependency_create(&dependency, 
-                                          NULL, 
-                                          &peak_malloc, 
-                                          &peak_free);
+                                          PEAK_DEFAULT_ALLOCATOR);
         assert(PEAK_SUCCESS == errc);
-        assert(NULL != dependency);
+        assert(NULL != dependency);        
         
-        amp_thread_group_t waiting_group;
-        
-        struct amp_thread_group_context_s waiting_group_context;
-        errc = amp_thread_group_context_init(&waiting_group_context,
-                                             NULL,
-                                             &peak_malloc, 
-                                             &peak_free);
-        assert(AMP_SUCCESS == errc);
+        errc = peak_dependency_increase(dependency);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
         
         
-        amp_raw_platform_s platform;
-        errc = amp_raw_platform_init(&platform,
-                                     NULL,
-                                     &peak_malloc,
-                                     &peak_free);
+        amp_platform_t platform = AMP_PLATFORM_UNINITIALIZED;
+        errc = amp_platform_create(&platform,
+                                   AMP_DEFAULT_ALLOCATOR);
         assert(AMP_SUCCESS == errc);
         
         std::size_t waiting_thread_count = 0;
-        errc = amp_raw_platform_get_active_hwthread_count(&platform,
-                                                          &waiting_thread_count);
-        if (AMP_SUCCESS != errc) {
-            errc = amp_raw_platform_get_active_core_count(&platform,
-                                                          &waiting_thread_count);
-            if (AMP_SUCCESS != errc) {
-                errc = amp_raw_platform_get_installed_hwthread_count(&platform,
-                                                                     &waiting_thread_count);
-                if (AMP_SUCCESS != errc) {
-                    errc = amp_raw_platform_get_installed_core_count(&platform,
-                                                                     &waiting_thread_count);
-                }
-            }
-        }
+        errc = amp_platform_get_concurrency_level(platform,
+                                                  &waiting_thread_count);
+        assert(AMP_SUCCESS == errc);
         
         if (waiting_thread_count == 0) {
             waiting_thread_count = 16;
@@ -294,7 +236,8 @@ SUITE(peak_dependency)
             --waiting_thread_count;
         }
         
-        errc = amp_raw_platform_finalize(&platform);
+        errc = amp_platform_destroy(&platform,
+                                    AMP_DEFAULT_ALLOCATOR);
         assert(AMP_SUCCESS == errc);
         
         std::vector<wait_on_dependency_context> thread_contexts(waiting_thread_count);
@@ -303,30 +246,29 @@ SUITE(peak_dependency)
             thread_contexts[i].before_wait_reached = false;
             thread_contexts[i].after_wait_reached = false;
         }
+
         
         
-        
-        struct amp_raw_byte_range_s waiting_threads_context_range;
-        errc = amp_raw_byte_range_init_with_item_count(&waiting_threads_context_range,
-                                                       &thread_contexts[0],
-                                                       waiting_thread_count,
-                                                       sizeof(wait_on_dependency_context));
+        amp_thread_array_t waiting_group = AMP_THREAD_ARRAY_UNINITIALIZED;
+        errc = amp_thread_array_create(&waiting_group,
+                                       AMP_DEFAULT_ALLOCATOR,
+                                       waiting_thread_count);
         assert(AMP_SUCCESS == errc);
         
-        errc = amp_thread_group_create_with_single_func(&waiting_group,
-                                                        &waiting_group_context,
-                                                        waiting_thread_count,
-                                                        &waiting_threads_context_range,
-                                                        &amp_raw_byte_range_next,
-                                                        &wait_on_dependency_func);
-        assert(AMP_SUCCESS == errc);
-        
-        errc = peak_dependency_increase(dependency);
-        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        for (std::size_t i = 0; i < waiting_thread_count; ++i) {
+            
+            errc = amp_thread_array_configure(waiting_group,
+                                              i, 
+                                              1,
+                                              &thread_contexts[i],
+                                              &wait_on_dependency_func);
+            assert(AMP_SUCCESS == errc);
+            
+        }
         
         
         std::size_t launched_count = 0;
-        errc = amp_thread_group_launch_all(waiting_group,
+        errc = amp_thread_array_launch_all(waiting_group,
                                            &launched_count);
         assert(AMP_SUCCESS == errc);
         assert(launched_count == waiting_thread_count);
@@ -345,28 +287,22 @@ SUITE(peak_dependency)
         CHECK_EQUAL(PEAK_SUCCESS, errc);
         
         std::size_t joined_thread_count = 0;
-        errc = amp_thread_group_join_all(waiting_group,
+        errc = amp_thread_array_join_all(waiting_group,
                                          &joined_thread_count);
         assert(AMP_SUCCESS == errc);
         assert(joined_thread_count == 0);
         
-        errc = amp_thread_group_destroy(waiting_group,
-                                        &waiting_group_context);
+        errc = amp_thread_array_destroy(&waiting_group,AMP_DEFAULT_ALLOCATOR);
         assert(AMP_SUCCESS == errc);
         waiting_group = NULL;
-        
-        errc = amp_thread_group_context_finalize(&waiting_group_context);
-        assert(AMP_SUCCESS == errc);
         
         for (std::size_t i = 0; i < waiting_thread_count; ++i) {
             CHECK_EQUAL(true, thread_contexts[i].before_wait_reached);
             CHECK_EQUAL(true, thread_contexts[i].after_wait_reached);
         }
         
-        errc = peak_dependency_destroy(dependency,
-                                       NULL,
-                                       &peak_malloc,
-                                       &peak_free);
+        errc = peak_dependency_destroy(&dependency,
+                                       PEAK_DEFAULT_ALLOCATOR);
         assert(PEAK_SUCCESS == errc);
         dependency = NULL;
     }
@@ -396,45 +332,21 @@ SUITE(peak_dependency)
     TEST(parallel_init_increase_dependency_wait_for_threads_decreasing_it)
     {
         peak_dependency_t dependency = NULL;
-        int errc = peak_dependency_create(&dependency, 
-                                          NULL, 
-                                          &peak_malloc, 
-                                          &peak_free);
+        int errc = peak_dependency_create(&dependency,
+                                          PEAK_DEFAULT_ALLOCATOR);
         assert(PEAK_SUCCESS == errc);
         assert(NULL != dependency);
         
-        amp_thread_group_t waiting_group;
         
-        struct amp_thread_group_context_s waiting_group_context;
-        errc = amp_thread_group_context_init(&waiting_group_context,
-                                             NULL,
-                                             &peak_malloc, 
-                                             &peak_free);
-        assert(AMP_SUCCESS == errc);
-        
-        
-        amp_raw_platform_s platform;
-        errc = amp_raw_platform_init(&platform,
-                                     NULL,
-                                     &peak_malloc,
-                                     &peak_free);
+        amp_platform_t platform = AMP_PLATFORM_UNINITIALIZED;
+        errc = amp_platform_create(&platform,
+                                   AMP_DEFAULT_ALLOCATOR);
         assert(AMP_SUCCESS == errc);
         
         std::size_t waiting_thread_count = 0;
-        errc = amp_raw_platform_get_active_hwthread_count(&platform,
-                                                          &waiting_thread_count);
-        if (AMP_SUCCESS != errc) {
-            errc = amp_raw_platform_get_active_core_count(&platform,
-                                                          &waiting_thread_count);
-            if (AMP_SUCCESS != errc) {
-                errc = amp_raw_platform_get_installed_hwthread_count(&platform,
-                                                                     &waiting_thread_count);
-                if (AMP_SUCCESS != errc) {
-                    errc = amp_raw_platform_get_installed_core_count(&platform,
-                                                                     &waiting_thread_count);
-                }
-            }
-        }
+        errc = amp_platform_get_concurrency_level(platform,
+                                                  &waiting_thread_count);
+        assert(AMP_SUCCESS == errc);
         
         if (waiting_thread_count == 0) {
             waiting_thread_count = 16;
@@ -444,7 +356,8 @@ SUITE(peak_dependency)
             --waiting_thread_count;
         }
         
-        errc = amp_raw_platform_finalize(&platform);
+        errc = amp_platform_destroy(&platform,
+                                    AMP_DEFAULT_ALLOCATOR);
         assert(AMP_SUCCESS == errc);
         
         std::vector<decrease_dependency_for_waiting_main_thread> thread_contexts(waiting_thread_count);
@@ -453,21 +366,23 @@ SUITE(peak_dependency)
         }
         
         
-        
-        struct amp_raw_byte_range_s waiting_threads_context_range;
-        errc = amp_raw_byte_range_init_with_item_count(&waiting_threads_context_range,
-                                                       &thread_contexts[0],
-                                                       waiting_thread_count,
-                                                       sizeof(decrease_dependency_for_waiting_main_thread));
+        amp_thread_array_t waiting_group = AMP_THREAD_ARRAY_UNINITIALIZED;
+        errc = amp_thread_array_create(&waiting_group,
+                                       AMP_DEFAULT_ALLOCATOR,
+                                       waiting_thread_count);
         assert(AMP_SUCCESS == errc);
         
-        errc = amp_thread_group_create_with_single_func(&waiting_group,
-                                                        &waiting_group_context,
-                                                        waiting_thread_count,
-                                                        &waiting_threads_context_range,
-                                                        &amp_raw_byte_range_next,
-                                                        &decrease_dependency_for_waiting_main_thread_func);
-        assert(AMP_SUCCESS == errc);
+        for (std::size_t i = 0; i < waiting_thread_count; ++i) {
+            
+            errc = amp_thread_array_configure(waiting_group,
+                                              i,
+                                              1,
+                                              &thread_contexts[i],
+                                              &decrease_dependency_for_waiting_main_thread_func);
+            assert(AMP_SUCCESS == errc);
+            
+        }
+        
         
         
         for (std::size_t i = 0; i < waiting_thread_count; ++i) {
@@ -476,7 +391,7 @@ SUITE(peak_dependency)
         }
         
         std::size_t launched_count = 0;
-        errc = amp_thread_group_launch_all(waiting_group,
+        errc = amp_thread_array_launch_all(waiting_group,
                                            &launched_count);
         assert(AMP_SUCCESS == errc);
         assert(launched_count == waiting_thread_count);
@@ -487,25 +402,18 @@ SUITE(peak_dependency)
         CHECK_EQUAL(PEAK_SUCCESS, errc);
         
         std::size_t joined_thread_count = 0;
-        errc = amp_thread_group_join_all(waiting_group,
+        errc = amp_thread_array_join_all(waiting_group,
                                          &joined_thread_count);
         assert(AMP_SUCCESS == errc);
         assert(joined_thread_count == 0);
         
-        errc = amp_thread_group_destroy(waiting_group,
-                                        &waiting_group_context);
-        assert(AMP_SUCCESS == errc);
-        waiting_group = NULL;
-        
-        errc = amp_thread_group_context_finalize(&waiting_group_context);
+        errc = amp_thread_array_destroy(&waiting_group,
+                                        AMP_DEFAULT_ALLOCATOR);
         assert(AMP_SUCCESS == errc);
                 
-        errc = peak_dependency_destroy(dependency,
-                                       NULL,
-                                       &peak_malloc,
-                                       &peak_free);
+        errc = peak_dependency_destroy(&dependency,
+                                       PEAK_DEFAULT_ALLOCATOR);
         assert(PEAK_SUCCESS == errc);
-        dependency = NULL;
     }
     
     
@@ -515,7 +423,7 @@ SUITE(peak_dependency)
         struct waiting_twice_context {
             peak_dependency_t shared_dependency;
             
-            amp_raw_mutex_t shared_counter_mutex;
+            amp_mutex_t shared_counter_mutex;
             int* shared_counter;
             
             int counter_read_first;
@@ -526,14 +434,14 @@ SUITE(peak_dependency)
         struct waiting_once_context {
             peak_dependency_t shared_dependency;
             
-            amp_raw_mutex_t shared_counter_mutex;
+            amp_mutex_t shared_counter_mutex;
             int* shared_counter;
             
             int counter_read_before_changing;
             
             std::size_t waiting_twice_thread_count;
             
-            amp_raw_semaphore_t waiting_once_done_sema;
+            amp_semaphore_t waiting_once_done_sema;
             
             std::size_t waiting_once_thread_count;
         };
@@ -614,7 +522,7 @@ SUITE(peak_dependency)
             */
             if (context->counter_read_before_changing == static_cast<int>(context->waiting_once_thread_count) - 1) {
                 
-                int ec = amp_raw_semaphore_signal(context->waiting_once_done_sema);
+                int ec = amp_semaphore_signal(context->waiting_once_done_sema);
                 assert(AMP_SUCCESS == ec);
             }
         }
@@ -625,65 +533,38 @@ SUITE(peak_dependency)
     TEST(parallel_no_waking_of_threads_waiting_on_positive_dependency_count_while_preceeding_waiting_threads_are_awoken)
     {
         peak_dependency_t dependency = NULL;
-        int errc = peak_dependency_create(&dependency, 
-                                          NULL, 
-                                          &peak_malloc, 
-                                          &peak_free);
+        int errc = peak_dependency_create(&dependency,
+                                          PEAK_DEFAULT_ALLOCATOR);
         assert(PEAK_SUCCESS == errc);
         assert(NULL != dependency);
         
-        struct amp_raw_semaphore_s waiting_once_done_sema;
-        errc = amp_raw_semaphore_init(&waiting_once_done_sema,
-                                      0);
+        errc = peak_dependency_increase(dependency);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        
+        amp_semaphore_t waiting_once_done_sema = AMP_SEMAPHORE_UNINITIALIZED;
+        errc = amp_semaphore_create(&waiting_once_done_sema,
+                                    AMP_DEFAULT_ALLOCATOR,
+                                    0);
         assert(AMP_SUCCESS == errc);
         
         
-        struct amp_raw_mutex_s counter_mutex;
-        errc = amp_raw_mutex_init(&counter_mutex);
+        amp_mutex_t counter_mutex = AMP_MUTEX_UNINITIALIZED;
+        errc = amp_mutex_create(&counter_mutex,
+                                AMP_DEFAULT_ALLOCATOR);
         assert(AMP_SUCCESS == errc);
         
         int counter = 0;
         
-        amp_thread_group_t waiting_twice_group;
-        amp_thread_group_t waiting_once_group;
-        
-        struct amp_thread_group_context_s waiting_twice_group_context;
-        errc = amp_thread_group_context_init(&waiting_twice_group_context,
-                                             NULL,
-                                             &peak_malloc, 
-                                             &peak_free);
-        assert(AMP_SUCCESS == errc);
-        
-        struct amp_thread_group_context_s waiting_once_group_context;
-        errc = amp_thread_group_context_init(&waiting_once_group_context,
-                                             NULL,
-                                             &peak_malloc, 
-                                             &peak_free);
-        assert(AMP_SUCCESS == errc);
-        
-        
-        amp_raw_platform_s platform;
-        errc = amp_raw_platform_init(&platform,
-                                     NULL,
-                                     &peak_malloc,
-                                     &peak_free);
+
+        amp_platform_t platform = AMP_PLATFORM_UNINITIALIZED;
+        errc = amp_platform_create(&platform,
+                                   AMP_DEFAULT_ALLOCATOR);
         assert(AMP_SUCCESS == errc);
         
         std::size_t waiting_thread_count = 0;
-        errc = amp_raw_platform_get_active_hwthread_count(&platform,
-                                                          &waiting_thread_count);
-        if (AMP_SUCCESS != errc) {
-            errc = amp_raw_platform_get_active_core_count(&platform,
-                                                          &waiting_thread_count);
-            if (AMP_SUCCESS != errc) {
-                errc = amp_raw_platform_get_installed_hwthread_count(&platform,
-                                                                     &waiting_thread_count);
-                if (AMP_SUCCESS != errc) {
-                    errc = amp_raw_platform_get_installed_core_count(&platform,
-                                                                     &waiting_thread_count);
-                }
-            }
-        }
+        errc = amp_platform_get_concurrency_level(platform,
+                                                  &waiting_thread_count);
+        assert(AMP_SUCCESS == errc);
         
         if (waiting_thread_count <= 1) {
             waiting_thread_count = 16;
@@ -697,7 +578,8 @@ SUITE(peak_dependency)
         std::size_t const waiting_twice_thread_count = waiting_thread_count - waiting_once_thread_count;
         
         
-        errc = amp_raw_platform_finalize(&platform);
+        errc = amp_platform_destroy(&platform,
+                                    AMP_DEFAULT_ALLOCATOR);
         assert(AMP_SUCCESS == errc);
         
         
@@ -705,11 +587,11 @@ SUITE(peak_dependency)
         std::vector<waiting_once_context> waiting_once_thread_contexts(waiting_once_thread_count);
         for (std::size_t i = 0; i < waiting_once_thread_count; ++i) {
             waiting_once_thread_contexts[i].shared_dependency = dependency;
-            waiting_once_thread_contexts[i].shared_counter_mutex = &counter_mutex;
+            waiting_once_thread_contexts[i].shared_counter_mutex = counter_mutex;
             waiting_once_thread_contexts[i].shared_counter = &counter;
             waiting_once_thread_contexts[i].counter_read_before_changing = -1;
             waiting_once_thread_contexts[i].waiting_twice_thread_count = waiting_twice_thread_count;
-            waiting_once_thread_contexts[i].waiting_once_done_sema = &waiting_once_done_sema;
+            waiting_once_thread_contexts[i].waiting_once_done_sema = waiting_once_done_sema;
             waiting_once_thread_contexts[i].waiting_once_thread_count = waiting_once_thread_count;
         }
         
@@ -717,59 +599,56 @@ SUITE(peak_dependency)
         std::vector<waiting_twice_context> waiting_twice_thread_contexts(waiting_twice_thread_count);
         for (std::size_t i = 0; i < waiting_twice_thread_count; ++i) {
             waiting_twice_thread_contexts[i].shared_dependency = dependency;
-            waiting_twice_thread_contexts[i].shared_counter_mutex = &counter_mutex;
+            waiting_twice_thread_contexts[i].shared_counter_mutex = counter_mutex;
             waiting_twice_thread_contexts[i].shared_counter = &counter;
             waiting_twice_thread_contexts[i].counter_read_first = -1;
             waiting_twice_thread_contexts[i].counter_read_second = -1;
         }
         
         
-        struct amp_raw_byte_range_s waiting_once_threads_context_range;
-        errc = amp_raw_byte_range_init_with_item_count(&waiting_once_threads_context_range,
-                                                       &waiting_once_thread_contexts[0],
-                                                       waiting_once_thread_count,
-                                                       sizeof(waiting_once_context));
+        amp_thread_array_t waiting_twice_group = AMP_THREAD_ARRAY_UNINITIALIZED;
+        amp_thread_array_t waiting_once_group = AMP_THREAD_ARRAY_UNINITIALIZED;
+        
+        errc = amp_thread_array_create(&waiting_twice_group,
+                                       AMP_DEFAULT_ALLOCATOR,
+                                       waiting_twice_thread_count);
         assert(AMP_SUCCESS == errc);
         
-        struct amp_raw_byte_range_s waiting_twice_threads_context_range;
-        errc = amp_raw_byte_range_init_with_item_count(&waiting_twice_threads_context_range,
-                                                       &waiting_twice_thread_contexts[0],
-                                                       waiting_twice_thread_count,
-                                                       sizeof(waiting_twice_context));
-        assert(AMP_SUCCESS == errc);
-        
-        
-        
-        errc = amp_thread_group_create_with_single_func(&waiting_twice_group,
-                                                        &waiting_twice_group_context,
-                                                        waiting_twice_thread_count,
-                                                        &waiting_twice_threads_context_range,
-                                                        &amp_raw_byte_range_next,
-                                                        &waiting_twice_func);
-        assert(AMP_SUCCESS == errc);
-        
-        errc = amp_thread_group_create_with_single_func(&waiting_once_group,
-                                                        &waiting_once_group_context,
-                                                        waiting_once_thread_count,
-                                                        &waiting_once_threads_context_range,
-                                                        &amp_raw_byte_range_next,
-                                                        &waiting_once_func);
+        errc = amp_thread_array_create(&waiting_once_group,
+                                       AMP_DEFAULT_ALLOCATOR,
+                                       waiting_once_thread_count);
         assert(AMP_SUCCESS == errc);
         
         
         
-        errc = peak_dependency_increase(dependency);
-        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        for (std::size_t i = 0; i < waiting_twice_thread_count; ++i) {
+            errc = amp_thread_array_configure(waiting_twice_group,
+                                              i,
+                                              1,
+                                              &waiting_twice_thread_contexts[i],
+                                              &waiting_twice_func);
+            assert(AMP_SUCCESS == errc);
+        }
+        
+        for (std::size_t i = 0; i < waiting_once_thread_count; ++i) {
+            errc = amp_thread_array_configure(waiting_once_group,
+                                              i,
+                                              1,
+                                              &waiting_once_thread_contexts[i],
+                                              &waiting_once_func);
+            assert(AMP_SUCCESS == errc);
+        }
+  
         
         
         std::size_t launched_count = 0;
-        errc = amp_thread_group_launch_all(waiting_twice_group,
+        errc = amp_thread_array_launch_all(waiting_twice_group,
                                            &launched_count);
         assert(AMP_SUCCESS == errc);
         assert(launched_count == waiting_twice_thread_count);
         
         launched_count = 0;
-        errc = amp_thread_group_launch_all(waiting_once_group,
+        errc = amp_thread_array_launch_all(waiting_once_group,
                                            &launched_count);
         assert(AMP_SUCCESS == errc);
         assert(launched_count == waiting_once_thread_count);
@@ -788,7 +667,7 @@ SUITE(peak_dependency)
         assert(PEAK_SUCCESS == errc);
         
         // Wait till the waiting once threads are done.
-        errc = amp_raw_semaphore_wait(&waiting_once_done_sema);
+        errc = amp_semaphore_wait(waiting_once_done_sema);
         assert(AMP_SUCCESS == errc);
         
         // Wait till the waiting twice threads are all waiting.
@@ -807,33 +686,24 @@ SUITE(peak_dependency)
         
     
         std::size_t joined_thread_count = 0;
-        errc = amp_thread_group_join_all(waiting_once_group,
+        errc = amp_thread_array_join_all(waiting_once_group,
                                          &joined_thread_count);
         assert(AMP_SUCCESS == errc);
         assert(joined_thread_count == 0);
         
-        errc = amp_thread_group_join_all(waiting_twice_group,
+        errc = amp_thread_array_join_all(waiting_twice_group,
                                          &joined_thread_count);
         assert(AMP_SUCCESS == errc);
         assert(joined_thread_count == 0);
         
         
-        errc = amp_thread_group_destroy(waiting_once_group,
-                                        &waiting_once_group_context);
-        assert(AMP_SUCCESS == errc);
-        waiting_once_group = NULL;
-        
-        errc = amp_thread_group_destroy(waiting_twice_group,
-                                        &waiting_twice_group_context);
-        assert(AMP_SUCCESS == errc);
-        waiting_twice_group = NULL;
-        
-        errc = amp_thread_group_context_finalize(&waiting_once_group_context);
+        errc = amp_thread_array_destroy(&waiting_once_group,
+                                        AMP_DEFAULT_ALLOCATOR);
         assert(AMP_SUCCESS == errc);
         
-        errc = amp_thread_group_context_finalize(&waiting_twice_group_context);
+        errc = amp_thread_array_destroy(&waiting_twice_group,
+                                        AMP_DEFAULT_ALLOCATOR);
         assert(AMP_SUCCESS == errc);
-        
         
         
         
@@ -852,16 +722,16 @@ SUITE(peak_dependency)
         
         
         
-        errc = amp_raw_mutex_finalize(&counter_mutex);
+        errc = amp_mutex_destroy(&counter_mutex,
+                                 AMP_DEFAULT_ALLOCATOR);
         assert(AMP_SUCCESS == errc);
         
-        errc = amp_raw_semaphore_finalize(&waiting_once_done_sema);
+        errc = amp_semaphore_destroy(&waiting_once_done_sema,
+                                     AMP_DEFAULT_ALLOCATOR);
         assert(AMP_SUCCESS == errc);
         
-        errc = peak_dependency_destroy(dependency,
-                                       NULL,
-                                       &peak_malloc,
-                                       &peak_free);
+        errc = peak_dependency_destroy(&dependency,
+                                       PEAK_DEFAULT_ALLOCATOR);
         assert(PEAK_SUCCESS == errc);
         dependency = NULL;
     }

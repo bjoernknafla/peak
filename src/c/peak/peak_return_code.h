@@ -33,7 +33,7 @@
 #ifndef PEAK_peak_return_code_H
 #define PEAK_peak_return_code_H
 
-#include <errno-h>
+#include <errno.h>
 
 #include <amp/amp_return_code.h>
 

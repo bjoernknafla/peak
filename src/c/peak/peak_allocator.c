@@ -37,13 +37,14 @@
 
 #include "peak_allocator.h"
 
+#include <assert.h>
 #include <stdlib.h>
 
 #include "peak_return_code.h"
 #include "peak_memory.h"
 
 
-void* peak_default_allocator_context = amp_default_allocator_context;
+void* peak_default_allocator_context = NULL; /* Same as amp_default_allocator_context */
 void* peak_default_allocator_aligned_context = NULL;
 
 
@@ -53,7 +54,7 @@ static struct peak_raw_allocator_s peak_internal_allocator_default = {
     peak_default_dealloc,
     NULL, /* peak_default_allocator_context */
     peak_default_alloc_aligned,
-    peak_default_calloc_aligned_,
+    peak_default_calloc_aligned,
     peak_default_dealloc_aligned,
     NULL, /* peak_default_allocator_aligned_context */
 };
@@ -120,13 +121,13 @@ void* peak_default_alloc_aligned(void *dummy_allocator_aligned_context,
                                  char const* filename,
                                  int line)
 {
-    (void)dummy_allocator_context;
+    (void)dummy_allocator_aligned_context;
     (void)filename;
     (void)line;
     
     assert(PEAK_DEFAULT_ALLOCATOR_ALIGNED_CONTEXT == dummy_allocator_aligned_context);
     
-    return pmem_malloc_aligned(alignment, bytes_to_allocate);
+    return peak_malloc_aligned(alignment, bytes_to_allocate);
 }
 
 
@@ -138,13 +139,13 @@ void* peak_default_calloc_aligned(void* dummy_allocator_aligned_context,
                                   char const* filename,
                                   int line)
 {
-    (void)dummy_allocator_context;
+    (void)dummy_allocator_aligned_context;
     (void)filename;
     (void)line;
     
     assert(PEAK_DEFAULT_ALLOCATOR_ALIGNED_CONTEXT == dummy_allocator_aligned_context);
     
-    return pmem_calloc_aligned(alignment,
+    return peak_calloc_aligned(alignment,
                                elem_count,
                                bytes_per_elem);
 }
@@ -156,13 +157,13 @@ int peak_default_dealloc_aligned(void *dummy_allocator_aligned_context,
                                  char const* filename,
                                  int line)
 {
-    (void)dummy_allocator_context;
+    (void)dummy_allocator_aligned_context;
     (void)filename;
     (void)line;
     
     assert(PEAK_DEFAULT_ALLOCATOR_ALIGNED_CONTEXT == dummy_allocator_aligned_context);
     
-    pmem_free_aligned(pointer);
+    peak_free_aligned(pointer);
     
     return PEAK_SUCCESS;
 }

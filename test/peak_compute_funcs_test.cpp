@@ -106,7 +106,7 @@ struct peak_compute_unit_s {
     
     struct peak_compute_group_s* group;
     
-    struct amp_raw_thread_s* thread; // Contains platform thread and thread function.
+    amp_thread_t thread; // Contains platform thread and thread function.
     
     peak_compute_unit_id_t id;
     
@@ -133,9 +133,7 @@ struct peak_compute_group_s {
     struct peak_mpmc_unbound_locked_fifo_queue_s* group_queue;
     
     
-    void* allocator_context;
-    peak_alloc_func_t alloc_func;
-    peak_dealloc_func_t dealloc_func;
+    peak_allocator_t allocator;
     
     struct peak_compute_group_unit_control_s unit_control;
     
@@ -145,7 +143,7 @@ struct peak_compute_group_s {
     // struct peak_compute_platform_s* compute_platform; // Single compute platform.
     
     
-    amp_thread_group_t threads;
+    amp_thread_array_t threads;
     
     peak_compute_group_id_t id;
 };
@@ -218,10 +216,10 @@ namespace {
         // the group completion notification.
         int return_code = PEAK_SUCCESS;
         
-        amp_raw_semaphore_t job_sync_call_sema = job->job_completion.job_sync_call_sema;
+        amp_semaphore_t job_sync_call_sema = job->job_completion.job_sync_call_sema;
         assert(NULL != job_sync_call_sema);
         
-        int const errc = amp_raw_semaphore_signal(job_sync_call_sema);
+        int const errc = amp_semaphore_signal(job_sync_call_sema);
         if (AMP_SUCCESS != errc) {
             return_code = errc;
             assert(0);
@@ -284,7 +282,7 @@ namespace {
         if (NULL != node) {
             
             return_code = peak_job_execute(&node->job, unit);
-            group->dealloc_func(group->allocator_context, node);
+            PEAK_DEALLOC(group->allocator,node);
         }
         
         return return_code;
@@ -327,7 +325,7 @@ namespace {
         
         int return_code = ENOMEM;
         
-        struct peak_unbound_fifo_queue_node_s* job_node = (struct peak_unbound_fifo_queue_node_s*)group->alloc_func(group->allocator_context, sizeof(struct peak_unbound_fifo_queue_node_s));
+        struct peak_unbound_fifo_queue_node_s* job_node = (struct peak_unbound_fifo_queue_node_s*)PEAK_ALLOC(group->allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
         assert(NULL != job_node);
         if (NULL != job_node) {
             
@@ -343,8 +341,8 @@ namespace {
             /* Must be balanced by a call to the group dealloc_func after
              * completing the job.
              */
-            return_code = peak_mpmc_unbound_locked_fifo_queue_push(group->group_queue,
-                                                                   job_node);
+            return_code = peak_mpmc_unbound_locked_fifo_queue_trypush(group->group_queue,
+                                                                   job_node, job_node);
             assert(PEAK_SUCCESS == return_code);
         }
         
@@ -380,7 +378,7 @@ namespace {
             return return_code;
         }
         
-        struct peak_unbound_fifo_queue_node_s* job_node = (struct peak_unbound_fifo_queue_node_s*)group->alloc_func(group->allocator_context, sizeof(struct peak_unbound_fifo_queue_node_s));
+        struct peak_unbound_fifo_queue_node_s* job_node = (struct peak_unbound_fifo_queue_node_s*)PEAK_ALLOC(group->allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
         assert(NULL != job_node);
         if (NULL != job_node) {
             
@@ -396,11 +394,11 @@ namespace {
             /* Must be balanced by a call to the group dealloc_func after
              * completing the job.
              */
-            return_code = peak_mpmc_unbound_locked_fifo_queue_push(group->group_queue,
-                                                                   job_node);
+            return_code = peak_mpmc_unbound_locked_fifo_queue_trypush(group->group_queue,
+                                                                   job_node, job_node);
             assert(PEAK_SUCCESS == return_code);
             
-            return_code = amp_raw_semaphore_wait(&sema);
+            return_code = amp_semaphore_wait(&sema);
             assert(AMP_SUCCESS == return_code);
         }
         
@@ -434,7 +432,7 @@ namespace {
         int return_code = ENOMEM;
         
         
-        struct peak_unbound_fifo_queue_node_s* job_node = (struct peak_unbound_fifo_queue_node_s*)group->alloc_func(group->allocator_context, sizeof(struct peak_unbound_fifo_queue_node_s));
+        struct peak_unbound_fifo_queue_node_s* job_node = (struct peak_unbound_fifo_queue_node_s*)PEAK_ALLOC(group->allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
         assert(NULL != job_node);
         if (NULL != job_node) {
             
@@ -453,8 +451,8 @@ namespace {
             /* Must be balanced by a call to the group dealloc_func after
              * completing the job.
              */
-            return_code = peak_mpmc_unbound_locked_fifo_queue_push(group->group_queue,
-                                                                   job_node);
+            return_code = peak_mpmc_unbound_locked_fifo_queue_trypush(group->group_queue,
+                                                                   job_node, job_node);
             assert(PEAK_SUCCESS == return_code);
         }
         
@@ -494,7 +492,7 @@ namespace {
             return return_code;
         }
         
-        struct peak_unbound_fifo_queue_node_s* job_node = (struct peak_unbound_fifo_queue_node_s*)group->alloc_func(group->allocator_context, sizeof(struct peak_unbound_fifo_queue_node_s));
+        struct peak_unbound_fifo_queue_node_s* job_node = (struct peak_unbound_fifo_queue_node_s*)AMP_ALLOC(group->allocator, sizeof(struct peak_unbound_fifo_queue_node_s));
         assert(NULL != job_node);
         if (NULL != job_node) {
             
@@ -513,11 +511,11 @@ namespace {
             /* Must be balanced by a call to the group dealloc_func after
              * completing the job.
              */
-            return_code = peak_mpmc_unbound_locked_fifo_queue_push(group->group_queue,
-                                                                   job_node);
+            return_code = peak_mpmc_unbound_locked_fifo_queue_trypush(group->group_queue,
+                                                                   job_node, job_node);
             assert(PEAK_SUCCESS == return_code);
             
-            return_code = amp_raw_semaphore_wait(&sema);
+            return_code = amp_semaphore_wait(&sema);
             assert(AMP_SUCCESS == return_code);
             
             return_code = peak_dependency_decrease(dependency);
@@ -635,7 +633,7 @@ SUITE(peak_compute_funcs_test)
         assert(PEAK_SUCCESS == errc);
         
         // TODO: @todo The moment it is availabel replace the wait call with try_wait.
-        errc = amp_raw_semaphore_wait(&sync_sema);
+        errc = amp_semaphore_wait(&sync_sema);
         assert(AMP_SUCCESS == errc);
         
         CHECK_EQUAL(expected_job_result, job_context.result);
@@ -652,10 +650,7 @@ SUITE(peak_compute_funcs_test)
         vtbl.complete = &peak_job_complete_and_notify_dependency_call;
         
         peak_dependency_t dependency  = NULL;
-        int errc = peak_dependency_create(&dependency,
-                                          NULL,
-                                          peak_malloc,
-                                          peak_free);
+        int errc = peak_dependency_create(&dependency,PEAK_DEFAULT_ALLOCATOR);
         assert(PEAK_SUCCESS == errc);
         
         struct peak_compute_unit_s unit;
@@ -688,10 +683,7 @@ SUITE(peak_compute_funcs_test)
         CHECK_EQUAL(uncompleted_count, (uint64_t)0);
         CHECK_EQUAL(expected_job_result, job_context.result);
         
-        errc = peak_dependency_destroy(dependency,
-                                       NULL,
-                                       peak_malloc,
-                                       peak_free);
+        errc = peak_dependency_destroy(&dependency,PEAK_DEFAULT_ALLOCATOR);
         assert(AMP_SUCCESS == errc);
     }
     
@@ -700,21 +692,128 @@ SUITE(peak_compute_funcs_test)
     namespace {
         
         // Ignores the size argument and just returns the allocator_context.
-        void* directly_return_context_alloc(void* allocator_context, size_t bytes);
-        void* directly_return_context_alloc(void* allocator_context, size_t bytes)
+        void* directly_return_context_alloc(void* allocator_context, 
+                                            size_t bytes,
+                                            char const* filename,
+                                            int line);
+        void* directly_return_context_alloc(void* allocator_context, 
+                                            size_t bytes,
+                                            char const* filename,
+                                            int line)
         {
             (void)bytes;
+            (void)filename;
+            (void)line;
             
             return allocator_context;
         }
         
+        
+        void* dummy_calloc(void* allocator_context, 
+                           size_t element_count,
+                           size_t bytes_per_element,
+                           char const* filename,
+                           int line);
+        void* dummy_calloc(void* allocator_context, 
+                           size_t element_count,
+                           size_t bytes_per_element,
+                           char const* filename,
+                           int line)
+        {
+            (void)allocator_context;
+            (void)element_count;
+            (void)bytes_per_element;
+            (void)filename;
+            (void)line;
+            
+            return NULL;
+        }
+        
+        
         // No-op - does nothing.
-        void dummy_free(void* allocator_context, void* pointer);
-        void dummy_free(void* allocator_context, void* pointer)
+        int dummy_free(void* allocator_context, 
+                       void* pointer,
+                       char const* filename,
+                       int line);
+        int dummy_free(void* allocator_context, 
+                       void* pointer,
+                       char const* filename,
+                       int line)
         {
             (void)allocator_context;
             (void)pointer;
+            (void)filename;
+            (void)line;
+            
+            return PEAK_SUCCESS;
         }
+        
+        
+        
+        // Ignores the size argument and just returns the allocator_context.
+        void* directly_return_context_alloc_aligned(void* allocator_context, 
+                                                    size_t alignment,
+                                                    size_t bytes,
+                                                    char const* filename,
+                                                    int line);
+        void* directly_return_context_alloc_aligned(void* allocator_context, 
+                                                    size_t alignment,
+                                                    size_t bytes,
+                                                    char const* filename,
+                                                    int line)
+        {
+            (void)alignment;
+            (void)bytes;
+            (void)filename;
+            (void)line;
+            
+            return allocator_context;
+        }
+        
+        
+        void* dummy_calloc_aligned(void* allocator_context,
+                                   size_t alignment, 
+                                   size_t element_count,
+                                   size_t bytes_per_element,
+                                   char const* filename,
+                                   int line);
+        void* dummy_calloc_aligned(void* allocator_context, 
+                                   size_t alignment,
+                                   size_t element_count,
+                                   size_t bytes_per_element,
+                                   char const* filename,
+                                   int line)
+        {
+            (void)allocator_context;
+            (void)alignment;
+            (void)element_count;
+            (void)bytes_per_element;
+            (void)filename;
+            (void)line;
+            
+            return NULL;
+        }
+        
+        
+        // No-op - does nothing.
+        int dummy_free_aligned(void* allocator_context, 
+                               void* pointer,
+                               char const* filename,
+                               int line);
+        int dummy_free_aligned(void* allocator_context, 
+                               void* pointer,
+                               char const* filename,
+                               int line)
+        {
+            (void)allocator_context;
+            (void)pointer;
+            (void)filename;
+            (void)line;
+            
+            return PEAK_SUCCESS;
+        }
+        
+        
         
     } // anonymous namespace
     
@@ -751,13 +850,24 @@ SUITE(peak_compute_funcs_test)
         struct peak_compute_unit_s compute_unit;
         struct peak_compute_group_s compute_group;
         compute_group.group_queue = &queue;
-        compute_group.allocator_context = NULL;
-        compute_group.alloc_func = &directly_return_context_alloc;
-        compute_group.dealloc_func = &dummy_free;
+        compute_group.allocator = NULL;
         compute_group.compute_units = &compute_unit;
         compute_group.compute_unit_count = 1;
         compute_group.threads = NULL;
         compute_group.id = 0;
+        
+        errc = peak_allocator_create(&compute_group.allocator,
+                                     PEAK_DEFAULT_ALLOCATOR,
+                                     NULL,
+                                     &directly_return_context_alloc,
+                                     &dummy_calloc,
+                                     &dummy_free,
+                                     NULL,
+                                     &directly_return_context_alloc_aligned,
+                                     &dummy_calloc_aligned,
+                                     &dummy_free_aligned);
+        assert(PEAK_SUCCESS == errc);
+        
         
         compute_unit.job_context_funcs = NULL;
         // compute_unit.job_context_data;
@@ -765,8 +875,8 @@ SUITE(peak_compute_funcs_test)
         compute_unit.thread = NULL;
         compute_unit.id = 1;
         
-        errc = peak_mpmc_unbound_locked_fifo_queue_push(&queue,
-                                                        &job_node);
+        errc = peak_mpmc_unbound_locked_fifo_queue_trypush(&queue,
+                                                        &job_node, &job_node);
         assert(PEAK_SUCCESS == errc);
         
         errc = peak_compute_unit_drain_one(&compute_unit);
@@ -779,6 +889,11 @@ SUITE(peak_compute_funcs_test)
         assert(PEAK_SUCCESS == errc);
         
         CHECK_EQUAL(expected_job_result, job_context.result);
+        
+        
+        errc = peak_allocator_destroy(&compute_group.allocator,
+                                      PEAK_DEFAULT_ALLOCATOR);
+        assert(PEAK_SUCCESS == errc);
         
     }
     
@@ -794,27 +909,36 @@ SUITE(peak_compute_funcs_test)
         job_context.result = 0;
         
         struct peak_job_s job;
-        int errc = peak_job_invalidate(&job);
-        assert(PEAK_SUCCESS == errc);
+        peak_job_invalidate(&job);
         
         struct peak_unbound_fifo_queue_node_s sentry_node = {NULL, { NULL, {NULL}, NULL, {NULL}, NULL}};
         struct peak_unbound_fifo_queue_node_s job_node = {NULL, job};
         
         struct peak_mpmc_unbound_locked_fifo_queue_s queue;        
-        errc = peak_mpmc_unbound_locked_fifo_queue_init(&queue, 
-                                                        &sentry_node);
+        int errc = peak_mpmc_unbound_locked_fifo_queue_init(&queue, 
+                                                            &sentry_node);
         assert(PEAK_SUCCESS == errc);
         
         struct peak_compute_unit_s compute_unit;
         struct peak_compute_group_s compute_group;
         compute_group.group_queue = &queue;
-        compute_group.allocator_context = &job_node;
-        compute_group.alloc_func = &directly_return_context_alloc;
-        compute_group.dealloc_func = &dummy_free;
+        compute_group.allocator = NULL;
         compute_group.compute_units = &compute_unit;
         compute_group.compute_unit_count = 1;
         compute_group.threads = NULL;
         compute_group.id = 0;
+        
+        errc = peak_allocator_create(&compute_group.allocator,
+                                     PEAK_DEFAULT_ALLOCATOR,
+                                     &job_node,
+                                     &directly_return_context_alloc,
+                                     &dummy_calloc,
+                                     &dummy_free,
+                                     &job_node,
+                                     &directly_return_context_alloc_aligned,
+                                     &dummy_calloc_aligned,
+                                     &dummy_free_aligned);
+        assert(PEAK_SUCCESS == errc);
         
         compute_unit.job_context_funcs = NULL;
         // compute_unit.job_context_data;
@@ -838,6 +962,10 @@ SUITE(peak_compute_funcs_test)
         
         CHECK_EQUAL(expected_job_result, job_context.result);
         
+        
+        errc = peak_allocator_destroy(&compute_group.allocator,
+                                      PEAK_DEFAULT_ALLOCATOR);
+        assert(PEAK_SUCCESS == errc);
     }
     
     

@@ -41,7 +41,7 @@
 #define PEAK_peak_dependency_H
 
 
-#include <peak/peak_memory.h>
+#include <peak/peak_allocator.h>
 
 
 #if defined(__cplusplus)

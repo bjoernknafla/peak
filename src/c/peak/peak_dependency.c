@@ -33,26 +33,26 @@
 #include "peak_dependency.h"
 
 #include <assert.h>
-#include <errno.h>
+#include <stddef.h>
 
 #include <amp/amp.h>
 #include <amp/amp_raw.h>
 
 #include "peak_stdint.h"
-#include "peak_stddef.h"
+#include "peak_return_code.h"
 #include "peak_raw_dependency.h"
 #include "peak_internal_dependency.h"
 
 
 
 
-int peak_raw_dependency_init(struct peak_raw_dependency_s* dependency)
+int peak_raw_dependency_init(peak_dependency_t dependency)
 {
     int errc = PEAK_UNSUPPORTED;
     
     assert(NULL != dependency);
     
-    int errc = amp_raw_mutex_init(&dependency->count_mutex);
+    errc = amp_raw_mutex_init(&dependency->count_mutex);
     if (AMP_SUCCESS != errc) {
         return errc;
     }
@@ -85,7 +85,7 @@ int peak_raw_dependency_init(struct peak_raw_dependency_s* dependency)
 
 
 
-int peak_raw_dependency_finalize(struct peak_raw_dependency_s* dependency)
+int peak_raw_dependency_finalize(peak_dependency_t dependency)
 {
     uint64_t count = 0;
     uint64_t waiting = 0;
@@ -101,6 +101,7 @@ int peak_raw_dependency_finalize(struct peak_raw_dependency_s* dependency)
     if (AMP_SUCCESS == retval) {
         count = dependency->dependency_count;
         waiting = dependency->waiting_count;
+        state = dependency->state;
     } else {
         /* TODO: @todo Decide if to crash if return value is not AMP_SUCCESS or 
          *             AMP_BUSY. 
@@ -111,7 +112,10 @@ int peak_raw_dependency_finalize(struct peak_raw_dependency_s* dependency)
     internal_errc0 = amp_mutex_unlock(&dependency->count_mutex);
     assert(AMP_SUCCESS == internal_errc0);
     
-    if (0 != count || 0 != waiting) {
+    if (0 != count 
+        || 0 != waiting 
+        || peak_counting_dependency_state != state) {
+        
         return PEAK_BUSY;
     }
     
@@ -187,30 +191,21 @@ int peak_internal_dependency_get_waiting_count(peak_dependency_t dependency,
 
 
 int peak_dependency_create(peak_dependency_t* dependency,
-                           void* allocator_context,
-                           peak_alloc_func_t alloc_func,
-                           peak_dealloc_func_t dealloc_func)
+                           peak_allocator_t allocator)
 {
-    assert(NULL != dependency);
-    assert(NULL != alloc_func);
-    assert(NULL != dealloc_func);
-    
-    if (NULL == dependency
-        || NULL == alloc_func
-        || NULL == dealloc_func) {
-        
-        return EINVAL;
-    }
-    
-    int return_code = ENOMEM;
+    int return_code = PEAK_UNSUPPORTED;
     peak_dependency_t tmp = NULL;
-    tmp = alloc_func(allocator_context, sizeof(struct peak_raw_dependency_s));
+    
+    assert(NULL != dependency);
+    assert(NULL != allocator);
+    
+    tmp = PEAK_ALLOC(allocator, sizeof(*tmp));
     if (NULL != tmp) {
         return_code = peak_raw_dependency_init(tmp);
         if (PEAK_SUCCESS == return_code) {
             *dependency = tmp;
         } else {
-            dealloc_func(allocator_context, tmp);
+            PEAK_DEALLOC(allocator, tmp);
         }
     }
     
@@ -219,26 +214,24 @@ int peak_dependency_create(peak_dependency_t* dependency,
 
 
 
-int peak_dependency_destroy(peak_dependency_t dependency,
-                            void* allocator_context,
-                            peak_alloc_func_t alloc_func,
-                            peak_dealloc_func_t dealloc_func)
+int peak_dependency_destroy(peak_dependency_t* dependency,
+                            peak_allocator_t allocator)
 {
+    int return_code = PEAK_UNSUPPORTED;
+    
     assert(NULL != dependency);
-    assert(NULL != alloc_func);
-    assert(NULL != dealloc_func);
+    assert(NULL != allocator);
     
-    if (NULL == dependency
-        || NULL == alloc_func
-        || NULL == dealloc_func) {
-        
-        return EINVAL;
-    }
-    
-    int return_code = peak_raw_dependency_finalize(dependency);    
+    return_code = peak_raw_dependency_finalize(*dependency);    
     
     if (PEAK_SUCCESS == return_code) {
-        dealloc_func(allocator_context, dependency);
+        return_code = PEAK_DEALLOC(allocator, *dependency);
+        
+        if (PEAK_SUCCESS == return_code) {
+            *dependency = NULL;
+        } else {
+            assert(0); /* Programming error */
+        }
     }
     
     return return_code;

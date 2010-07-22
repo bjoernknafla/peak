@@ -33,7 +33,7 @@
 #ifndef PEAK_peak_job_H
 #define PEAK_peak_job_H
 
-#include <amp/amp_raw_semaphore.h>
+#include <amp/amp_semaphore.h>
 
 #include <peak/peak_dependency.h>
 
@@ -197,7 +197,7 @@ extern "C" {
              * caller blocks and the job has a dependency then the blocking 
              * caller stores and manages the dependency for the job.
              */
-            struct amp_raw_semaphore_s job_sync_call_sema; 
+            amp_semaphore_t job_sync_call_sema; 
             
             /* TODO: @todo Add peak_job_cancle_group* job_cancel_group; 
              */

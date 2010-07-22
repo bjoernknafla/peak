@@ -100,7 +100,7 @@ extern "C" {
         
         struct peak_job_s job;
     };
-    
+
     
     /**
      * @attention Queues can't be copied - but pointers to queues can.
@@ -167,7 +167,7 @@ extern "C" {
      * Finalizes the queue (but doesn't free the memory it uses) and hands back 
      * all remaining nodes including the current sentry node. If the nodes 
      * aren't owned by another data structure you need to free their memory via 
-     * peak_unbound_fifo_queue_node_clear_nodes otherwise memory leaks.
+     * peak_unbound_fifo_queue_node_destroy_nodes otherwise memory leaks.
      *
      * queue and remaining_nodes must not be NULL.
      *
@@ -189,11 +189,27 @@ extern "C" {
     
     
 
+    /**
+     * Returns PEAK_TRUE if tail_node is reacheable from head_node, otherwise
+     * returns PEAK_FALSE.
+     *
+     * Also returns PEAK_FALSE if even one node in the chain isn't properly aligned.
+     *
+     * Does not check if tail_node's next field is NULL to enable testing of 
+     * sub-chains.
+     *
+     * @attention Does not detect cycles!
+     */
+    PEAK_BOOL peak_unbound_fifo_queue_node_is_chain_valid(struct peak_unbound_fifo_queue_node_s const* chain_start_node,
+                                                          struct peak_unbound_fifo_queue_node_s const* chain_end_node);
+    
 
     
     /**
      * Takes the remaining nodes handed back by finalize and frees their memory
      * by calling the PEAK_DEALLOC with allocator on them.
+     *
+     * Doesn't handle the job context inside the nodes jobs.
      * 
      *
      * @attention The same or a compatible allocator as the one used to allocate
@@ -205,10 +221,10 @@ extern "C" {
      *         that must not happen as resources might be leaked, e.g.:
      *         PEAK_ERROR or PEAK_DEALLOC specific error codes might be returned 
      *         to show that an error occured trying to free the nodes. Memory
-     *         will not be leaked and the remaining nodes are assigned to
-     *         <code>*nodes</code>.
+     *         will not be leaked and the remaining nodes are accessible via
+     *         nodes.
      */
-    int peak_unbound_fifo_queue_node_clear_nodes(struct peak_unbound_fifo_queue_node_s **nodes,
+    int peak_unbound_fifo_queue_node_destroy_nodes(struct peak_unbound_fifo_queue_node_s **nodes,
                                                  peak_allocator_t allocator);
    
     
@@ -222,8 +238,7 @@ extern "C" {
      *            decreases the performance of concurrently ongoing pushes
      *            and pops - use sparringly if at all.
      */
-    PEAK_BOOL peak_mpmc_unbound_locked_fifo_queue_is_empty(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
-                                                     PEAK_BOOL *is_empty);
+    PEAK_BOOL peak_mpmc_unbound_locked_fifo_queue_is_empty(struct peak_mpmc_unbound_locked_fifo_queue_s *queue);
     
 
     

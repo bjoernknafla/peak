@@ -50,7 +50,8 @@
 #if defined(__cplusplus)
 extern "C" {
 #endif
-
+    
+    
     /**
      * Returns a pointer to a memory block of size_in_bytes size that is aligned 
      * to alignment or NULL if no memory was available.
@@ -128,6 +129,6 @@ extern "C" {
 #if defined(__cplusplus)
 } /* extern "C" */
 #endif
-        
+
 
 #endif /* PEAK_peak_memory_H */

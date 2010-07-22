@@ -35,10 +35,10 @@
 /**
  * TODO: @todo Not supported on Windows implement a wrapper or replacement.
  */
+#include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <assert.h>
-
+#include <string.h>
 
 #include "peak_data_alignment.h"
 
