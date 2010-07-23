@@ -140,6 +140,8 @@ extern "C" {
      * The queue functions don't allocate or deallocate memory directly, though
      * through system calls malloc and free might be called indirectly.
      *
+     * Takes over ownership of first_sentry_node.
+     *
      * @attention queue and sentry_node mustn't be NULL.
      *
      * @attention Don't call concurrently for the same or an already

@@ -745,6 +745,285 @@ SUITE(peak_mpmc_unbound_locked_fifo_queue)
     
     
     
+    TEST(single_thread_enqueue_multiple_nodes)
+    {
+        struct peak_unbound_fifo_queue_node_s sentry_node;
+        
+        struct peak_mpmc_unbound_locked_fifo_queue_s queue;
+        int errc = peak_mpmc_unbound_locked_fifo_queue_init(&queue,
+                                                            &sentry_node);
+        assert(PEAK_SUCCESS == errc);
+        
+        
+        // Setup three chains of node to push.
+        // size_t const sentry_node_count = 1;
+        size_t const first_chain_node_count = 3;
+        size_t const second_chain_node_count = 1;
+        size_t const third_chain_node_count = 2;
+        // size_t const node_count = sentry_node_count + first_chain_node_count + second_chain_node_count + third_chain_node_count;        
+        
+        
+        struct peak_unbound_fifo_queue_node_s first_chain[first_chain_node_count];
+        struct peak_unbound_fifo_queue_node_s second_chain[second_chain_node_count];
+        struct peak_unbound_fifo_queue_node_s third_chain[third_chain_node_count];
+        
+
+        first_chain[0].next = NULL;
+        /* Store the node address in the job context to check what is poped later on. */
+        first_chain[0].job.job_context = &first_chain[0];
+        for (std::size_t i = 1; i < first_chain_node_count; ++i) {
+            first_chain[i].next = NULL;
+            first_chain[i].job.job_context = &first_chain[i];
+            first_chain[i-1].next = &first_chain[i];
+        }
+        
+        second_chain[0].next = NULL;
+        /* Store the node address in the job context to check what is poped later on. */
+        second_chain[0].job.job_context = &second_chain[0];
+        for (std::size_t i = 1; i < second_chain_node_count; ++i) {
+            second_chain[i].next = NULL;
+            second_chain[i].job.job_context = &second_chain[i];
+            second_chain[i-1].next = &second_chain[i];
+        }
+        
+        third_chain[0].next = NULL;
+        /* Store the node address in the job context to check what is poped later on. */
+        third_chain[0].job.job_context = &third_chain[0];
+        for (std::size_t i = 1; i < third_chain_node_count; ++i) {
+            third_chain[i].next = NULL;
+            third_chain[i].job.job_context = &third_chain[i];
+            third_chain[i-1].next = &third_chain[i];
+        }
+        
+        
+        
+        // Push first chain.
+        errc = peak_mpmc_unbound_locked_fifo_queue_trypush(&queue,
+                                                           &first_chain[0], 
+                                                           &first_chain[first_chain_node_count - 1]);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        
+        
+        // Pop a node.
+        struct peak_unbound_fifo_queue_node_s* tmp_node = NULL;
+        
+        tmp_node = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
+        CHECK_EQUAL(static_cast<void*>(&first_chain[0]), tmp_node->job.job_context);
+        
+        // Push second chain.
+        errc = peak_mpmc_unbound_locked_fifo_queue_trypush(&queue,
+                                                           &second_chain[0],
+                                                           &second_chain[second_chain_node_count - 1]);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        
+        // Push third chain.
+        errc = peak_mpmc_unbound_locked_fifo_queue_trypush(&queue,
+                                                           &third_chain[0],
+                                                           &third_chain[third_chain_node_count - 1]);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        
+        
+        // Pop rest of first chain.
+        for (std::size_t i = 1; i < first_chain_node_count; ++i) {
+            tmp_node = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
+            CHECK_EQUAL(static_cast<void*>(&first_chain[i]), tmp_node->job.job_context);
+        }
+        
+        // Pop second chain.
+        for (std::size_t i = 0; i < second_chain_node_count; ++i) {
+            tmp_node = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
+            CHECK_EQUAL(static_cast<void*>(&second_chain[i]), tmp_node->job.job_context);
+        }
+        
+        // Pop third chain.
+        for (std::size_t i = 0; i < third_chain_node_count; ++i) {
+            tmp_node = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
+            CHECK_EQUAL(static_cast<void*>(&third_chain[i]), tmp_node->job.job_context);
+        }
+        
+        
+        // Do not free the returned remaining nodes as they are all on the stack.
+        struct peak_unbound_fifo_queue_node_s* remaining_node_chain = NULL;
+        errc = peak_mpmc_unbound_locked_fifo_queue_finalize(&queue,
+                                                            &remaining_node_chain);
+        assert(PEAK_SUCCESS == errc);
+    }
+    
+    
+    
+    namespace {
+        
+        enum multiple_nodes_push_test_flag {
+            multiple_nodes_push_test_unset_flag = 0,
+            multiple_nodes_push_test_set_flag = 42
+        };
+        
+        typedef std::vector<peak_unbound_fifo_queue_node_s> node_collection;
+        
+        struct multiple_nodes_push_test_thread_context {
+            
+            peak_mpmc_unbound_locked_fifo_queue_s* queue;
+            
+            std::size_t start_index;
+            std::size_t chains_per_thread_count;
+            std::size_t nodes_per_chain_count;
+            node_collection* nodes;
+            std::vector<multiple_nodes_push_test_flag>* flags;
+        };
+        
+        
+        void multiple_nodes_push_test_thread_func(void* ctxt);
+        void multiple_nodes_push_test_thread_func(void* ctxt)
+        {
+            multiple_nodes_push_test_thread_context* context = static_cast<multiple_nodes_push_test_thread_context*>(ctxt);
+            
+            std::size_t const start_index = context->start_index;
+            
+            node_collection& nodes = *(context->nodes);
+            
+            for (std::size_t i = 0; i < context->chains_per_thread_count; ++i) {
+             
+                std::size_t const j = start_index + i * context->nodes_per_chain_count;
+                int errc = peak_mpmc_unbound_locked_fifo_queue_trypush(context->queue,
+                                                                       &nodes[j], 
+                                                                       &nodes[j + context->nodes_per_chain_count - 1]);
+                assert(PEAK_SUCCESS == errc);
+            }
+            
+            
+        }
+        
+        
+        void multiple_nodes_push_test_func(void* ctxt);
+        void multiple_nodes_push_test_func(void* ctxt)
+        {
+            multiple_nodes_push_test_flag* flag_to_set = static_cast<multiple_nodes_push_test_flag*>(ctxt);
+            
+            *flag_to_set = multiple_nodes_push_test_set_flag;
+        }
+        
+    } // anonymous namespace
+    
+    
+    
+    TEST_FIXTURE(allocator_test_fixture, many_threads_enqueue_multiple_nodes)
+    {
+        // Create queue
+        struct peak_unbound_fifo_queue_node_s sentry_node;
+        struct peak_mpmc_unbound_locked_fifo_queue_s queue;
+        int errc = peak_mpmc_unbound_locked_fifo_queue_init(&queue, 
+                                                            &sentry_node);
+        assert(PEAK_SUCCESS == errc);
+        
+        
+        // Get concurrency level
+        amp_platform_t platform = AMP_PLATFORM_UNINITIALIZED;
+        errc = amp_platform_create(&platform, AMP_DEFAULT_ALLOCATOR);
+        assert(AMP_SUCCESS == errc);
+        
+        std::size_t thread_count = 16;
+        errc = amp_platform_get_concurrency_level(platform, &thread_count);
+        assert(AMP_SUCCESS == errc);
+        assert(thread_count > 1u);
+        
+        errc = amp_platform_destroy(&platform, AMP_DEFAULT_ALLOCATOR);
+        assert(AMP_SUCCESS == errc);
+        
+        
+        // Create all nodes and init the jobs
+        std::size_t const chains_per_thread_count = 3;
+        std::size_t const nodes_per_chain_count = 2;
+        std::size_t const node_count_without_sentry = thread_count * chains_per_thread_count * nodes_per_chain_count;
+        
+        std::vector<multiple_nodes_push_test_flag> flags(node_count_without_sentry, 
+                                                         multiple_nodes_push_test_unset_flag);
+        
+        node_collection nodes_without_sentry(node_count_without_sentry);
+        for (std::size_t i = 0; i < node_count_without_sentry; ++i) {
+            nodes_without_sentry[i].job.job_func.minimal_job_func = &multiple_nodes_push_test_func;
+            nodes_without_sentry[i].job.job_context = &flags[i];
+            
+            if (nodes_per_chain_count - 1 == i % nodes_per_chain_count) {
+                nodes_without_sentry[i].next = NULL;
+            } else {
+                nodes_without_sentry[i].next = &nodes_without_sentry[i+1];
+            }
+        }
+        
+        
+        std::vector<multiple_nodes_push_test_thread_context> thread_contexts(thread_count);
+        for (std::size_t i = 0; i < thread_count; ++i) {
+            thread_contexts[i].queue = &queue;
+            thread_contexts[i].start_index = i * chains_per_thread_count * nodes_per_chain_count;
+            thread_contexts[i].chains_per_thread_count = chains_per_thread_count;
+            thread_contexts[i].nodes_per_chain_count = nodes_per_chain_count;
+            thread_contexts[i].nodes = &nodes_without_sentry;
+            thread_contexts[i].flags = &flags;
+        }
+        
+        
+        // Start threads push the nodes into the queue
+        amp_thread_array_t threads = AMP_THREAD_ARRAY_UNINITIALIZED;
+        errc = amp_thread_array_create(&threads,
+                                       AMP_DEFAULT_ALLOCATOR, 
+                                       thread_count);
+        assert(AMP_SUCCESS == errc);
+        
+        for (std::size_t i = 0; i < thread_count; ++i) {
+            
+            errc = amp_thread_array_configure(threads,
+                                              i,
+                                              1,
+                                              &thread_contexts[i],
+                                              &multiple_nodes_push_test_thread_func);
+            assert(AMP_SUCCESS == errc);
+        }
+        
+        
+        std::size_t joinable_count = 0;
+        errc = amp_thread_array_launch_all(threads,
+                                           &joinable_count);
+        assert(AMP_SUCCESS == errc);
+        assert(thread_count == joinable_count);
+        
+        // Join with threads
+        errc = amp_thread_array_join_all(threads,
+                                         &joinable_count);
+        assert(AMP_SUCCESS == errc);
+        assert(0 == joinable_count);
+        
+        errc = amp_thread_array_destroy(&threads, 
+                                        AMP_DEFAULT_ALLOCATOR);
+        assert(AMP_SUCCESS == errc);
+        
+        // Pop the queue manually and run the jobs
+        struct peak_unbound_fifo_queue_node_s* pointer_to_node_on_stack = NULL;
+        do {
+            pointer_to_node_on_stack = peak_mpmc_unbound_locked_fifo_queue_trypop(&queue);
+            if (NULL != pointer_to_node_on_stack) {
+                
+                peak_minimal_job_func_t job = pointer_to_node_on_stack->job.job_func.minimal_job_func;
+                void* job_context = pointer_to_node_on_stack->job.job_context;
+                job(job_context);
+            }
+            
+        } while (NULL != pointer_to_node_on_stack);
+        
+        
+        // Check that all flags are set
+        for (std::size_t i = 0; i < node_count_without_sentry; ++i) {
+            CHECK_EQUAL(multiple_nodes_push_test_set_flag, flags[i]);
+        }
+        
+        // Cleanup. All memory on the stack, so no freeing necessary.
+        struct peak_unbound_fifo_queue_node_s* remaining_nodes = NULL;
+        errc = peak_mpmc_unbound_locked_fifo_queue_finalize(&queue, 
+                                                            &remaining_nodes);
+        assert(PEAK_SUCCESS == errc);
+    }
+    
+    
+    
     
 } // SUITE(peak_mpmc_unbound_locked_fifo_queue)
 
