@@ -42,10 +42,12 @@
 
 SUITE(peak_memory)
 {
-    TEST(zero_is_alogned)
+    TEST(zero_is_aligned)
     {
         CHECK(peak_is_aligned(NULL, PEAK_ATOMIC_ACCESS_ALIGNMENT));
     }
+    
+    
     
     TEST(peak_malloc_aligned)
     {
