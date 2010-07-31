@@ -46,6 +46,9 @@
  *             allocator contexts correctly.
  *
  * TODO: @todo Write unit tests for aligned allocation and deallocation.
+ *
+ * TODO: @todo Replace the allocator alloc and dealloc macros with inline 
+ *             functions for better debugging.
  */
 
 #ifndef PEAK_peak_allocator_H

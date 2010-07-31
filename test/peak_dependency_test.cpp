@@ -55,7 +55,7 @@
 #include <peak/peak_return_code.h>
 #include <peak/peak_allocator.h>
 #include <peak/peak_dependency.h>
-#include <peak/peak_internal_dependency.h>
+#include <peak/peak_lib_dependency.h>
 
 
 
@@ -120,7 +120,7 @@ SUITE(peak_dependency)
         
     } // anonymous namespace
     
-
+    
     TEST(parallel_init_and_wait)
     {
         peak_dependency_t dependency = NULL;
@@ -246,7 +246,7 @@ SUITE(peak_dependency)
             thread_contexts[i].before_wait_reached = false;
             thread_contexts[i].after_wait_reached = false;
         }
-
+        
         
         
         amp_thread_array_t waiting_group = AMP_THREAD_ARRAY_UNINITIALIZED;
@@ -278,8 +278,8 @@ SUITE(peak_dependency)
         // or changed without any previous warning or notice.
         uint64_t waiting_count = 0;
         while (waiting_count != waiting_thread_count) {
-            errc = peak_internal_dependency_get_waiting_count(dependency,
-                                                              &waiting_count);
+            errc = peak_lib_dependency_get_waiting_count(dependency,
+                                                         &waiting_count);
             assert(PEAK_SUCCESS == errc);
         }
         
@@ -396,7 +396,7 @@ SUITE(peak_dependency)
         assert(AMP_SUCCESS == errc);
         assert(launched_count == waiting_thread_count);
         
- 
+        
         // Wait till the threads have decreased the dependency count to zero.
         errc = peak_dependency_wait(dependency);
         CHECK_EQUAL(PEAK_SUCCESS, errc);
@@ -410,7 +410,7 @@ SUITE(peak_dependency)
         errc = amp_thread_array_destroy(&waiting_group,
                                         AMP_DEFAULT_ALLOCATOR);
         assert(AMP_SUCCESS == errc);
-                
+        
         errc = peak_dependency_destroy(&dependency,
                                        PEAK_DEFAULT_ALLOCATOR);
         assert(PEAK_SUCCESS == errc);
@@ -510,16 +510,16 @@ SUITE(peak_dependency)
             assert(AMP_SUCCESS == errc);
             
             /*
-            if (0 == context->counter_read_before_changing) {
-                
-                // Decrease the dependency to zero so the twice waiting threads
-                // have a chance to wake up.
-                for (size_t i = 0; i < context->waiting_twice_thread_count; ++i) {
-                    int ec = peak_dependency_decrease(context->shared_dependency);
-                    assert(PEAK_SUCCESS == ec);
-                }
-            }
-            */
+             if (0 == context->counter_read_before_changing) {
+             
+             // Decrease the dependency to zero so the twice waiting threads
+             // have a chance to wake up.
+             for (size_t i = 0; i < context->waiting_twice_thread_count; ++i) {
+             int ec = peak_dependency_decrease(context->shared_dependency);
+             assert(PEAK_SUCCESS == ec);
+             }
+             }
+             */
             if (context->counter_read_before_changing == static_cast<int>(context->waiting_once_thread_count) - 1) {
                 
                 int ec = amp_semaphore_signal(context->waiting_once_done_sema);
@@ -555,7 +555,7 @@ SUITE(peak_dependency)
         
         int counter = 0;
         
-
+        
         amp_platform_t platform = AMP_PLATFORM_UNINITIALIZED;
         errc = amp_platform_create(&platform,
                                    AMP_DEFAULT_ALLOCATOR);
@@ -638,7 +638,7 @@ SUITE(peak_dependency)
                                               &waiting_once_func);
             assert(AMP_SUCCESS == errc);
         }
-  
+        
         
         
         std::size_t launched_count = 0;
@@ -657,8 +657,8 @@ SUITE(peak_dependency)
         // Wait till all threads are waiting on dependency
         uint64_t waiting_count = 0;
         while (waiting_count != waiting_thread_count) {
-            errc = peak_internal_dependency_get_waiting_count(dependency,
-                                                              &waiting_count);
+            errc = peak_lib_dependency_get_waiting_count(dependency,
+                                                         &waiting_count);
             assert(PEAK_SUCCESS == errc);
         }
         
@@ -673,8 +673,8 @@ SUITE(peak_dependency)
         // Wait till the waiting twice threads are all waiting.
         waiting_count = 0;
         while (waiting_count != waiting_twice_thread_count) {
-            errc = peak_internal_dependency_get_waiting_count(dependency,
-                                                              &waiting_count);
+            errc = peak_lib_dependency_get_waiting_count(dependency,
+                                                         &waiting_count);
             assert(PEAK_SUCCESS == errc);
         }
         
@@ -684,7 +684,7 @@ SUITE(peak_dependency)
             assert(PEAK_SUCCESS == errc);
         }
         
-    
+        
         std::size_t joined_thread_count = 0;
         errc = amp_thread_array_join_all(waiting_once_group,
                                          &joined_thread_count);

@@ -79,35 +79,36 @@
  *             amp_raw_mutex_s directly.
  */
 
-#ifndef PEAK_peak_mpmc_unbound_locked_fifo_queue_H
-#define PEAK_peak_mpmc_unbound_locked_fifo_queue_H
+#ifndef PEAK_peak_lib_locked_mpmc_fifo_queue_H
+#define PEAK_peak_lib_locked_mpmc_fifo_queue_H
 
 #include <amp/amp_raw.h>
 
 #include <peak/peak_stddef.h>
 #include <peak/peak_allocator.h>
-#include <peak/peak_job.h>
+
+#include <peak/peak_lib_work_item.h>
 
 
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
-
     
-    struct peak_unbound_fifo_queue_node_s {
-        struct peak_unbound_fifo_queue_node_s *next;
+    
+    struct peak_lib_queue_node_s {
+        struct peak_lib_queue_node_s *next;
         
-        struct peak_job_s job;
+        struct peak_lib_work_item_s work_item;
     };
-
+    typedef struct peak_lib_queue_node_s* peak_lib_queue_node_t;
     
     /**
      * @attention Queues can't be copied - but pointers to queues can.
      */
-    struct peak_mpmc_unbound_locked_fifo_queue_s {
-        struct peak_unbound_fifo_queue_node_s *last_produced;
-        struct peak_unbound_fifo_queue_node_s *last_consumed;
+    struct peak_lib_locked_mpmc_fifo_queue_s {
+        struct peak_lib_queue_node_s *last_produced;
+        struct peak_lib_queue_node_s *last_consumed;
         
         /* TODO: @todo Replace mutexes with spin-locks.
          */
@@ -118,18 +119,57 @@ extern "C" {
          * TODO: @todo Detect empty case and only lock then.
          */
         struct amp_raw_mutex_s next_mutex;
-
+        
         /* Memory management is moved to the caller of the queue therefore no
          * context that stores allocators is needed.
          * TODO: @todo Remove comment and non-used code/data.
-        struct peak_queue_context_s *context;
+         struct peak_queue_context_s *context;
          */
     };
+    typedef struct peak_lib_locked_mpmc_fifo_queue_s* peak_lib_locked_mpmc_fifo_queue_t;
     
     
-
-
-
+    
+    /**
+     * Returns PEAK_TRUE if tail_node is reacheable from head_node, otherwise
+     * returns PEAK_FALSE.
+     *
+     * Also returns PEAK_FALSE if even one node in the chain isn't properly aligned.
+     *
+     * Does not check if tail_node's next field is NULL to enable testing of 
+     * sub-chains.
+     *
+     * @attention Does not detect cycles!
+     */
+    PEAK_BOOL peak_lib_queue_node_is_chain_valid(struct peak_lib_queue_node_s const* chain_start_node,
+                                                 struct peak_lib_queue_node_s const* chain_end_node);
+    
+    
+    
+    /**
+     * Takes the remaining nodes handed back by finalize and frees their memory
+     * by calling the PEAK_DEALLOC_ALIGNED with allocator on them.
+     *
+     * Doesn't handle the job context inside the nodes jobs.
+     * 
+     *
+     * @attention The same or a compatible allocator as the one used to allocate
+     *            the nodes must be used or behavior is undefined.
+     *
+     * @return PEAK_SUCCESS on successful freeing of nodes. nodes will point to
+     *         @c NULL.
+     *         Other error codes might be returned and show programmer errors
+     *         that must not happen as resources might be leaked, e.g.:
+     *         PEAK_ERROR or PEAK_DEALLOC specific error codes might be returned 
+     *         to show that an error occured trying to free the nodes. Memory
+     *         will not be leaked and the remaining nodes are accessible via
+     *         nodes.
+     */
+    int peak_lib_queue_node_destroy_aligned_nodes(struct peak_lib_queue_node_s **nodes,
+                                                  peak_allocator_t allocator);
+    
+    
+    
     /**
      * Initializes queue to be an empty queue only containing first_sentry_node
      * as a sentry or dummy node. 
@@ -158,18 +198,18 @@ extern "C" {
      *         All other error codes that might be returned show programmer 
      *         errors that must not happen.
      */
-    int peak_mpmc_unbound_locked_fifo_queue_init(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
-                                                 struct peak_unbound_fifo_queue_node_s *first_sentry_node);
+    int peak_lib_locked_mpmc_fifo_queue_init(struct peak_lib_locked_mpmc_fifo_queue_s *queue,
+                                             struct peak_lib_queue_node_s *first_sentry_node);
     
     
-
-
+    
+    
     
     /**
      * Finalizes the queue (but doesn't free the memory it uses) and hands back 
      * all remaining nodes including the current sentry node. If the nodes 
      * aren't owned by another data structure you need to free their memory via 
-     * peak_unbound_fifo_queue_node_destroy_nodes otherwise memory leaks.
+     * peak_lib_queue_node_destroy_nodes otherwise memory leaks.
      *
      * queue and remaining_nodes must not be NULL.
      *
@@ -185,52 +225,10 @@ extern "C" {
      *         PEAK_ERROR which might be used to signal that the
      *         queue (its internal synchronization primitives) are still in use.
      */
-    int peak_mpmc_unbound_locked_fifo_queue_finalize(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
-                                                     struct peak_unbound_fifo_queue_node_s **remaining_nodes);
+    int peak_lib_locked_mpmc_fifo_queue_finalize(struct peak_lib_locked_mpmc_fifo_queue_s *queue,
+                                                 struct peak_lib_queue_node_s **remaining_nodes);
     
     
-    
-
-    /**
-     * Returns PEAK_TRUE if tail_node is reacheable from head_node, otherwise
-     * returns PEAK_FALSE.
-     *
-     * Also returns PEAK_FALSE if even one node in the chain isn't properly aligned.
-     *
-     * Does not check if tail_node's next field is NULL to enable testing of 
-     * sub-chains.
-     *
-     * @attention Does not detect cycles!
-     */
-    PEAK_BOOL peak_unbound_fifo_queue_node_is_chain_valid(struct peak_unbound_fifo_queue_node_s const* chain_start_node,
-                                                          struct peak_unbound_fifo_queue_node_s const* chain_end_node);
-    
-
-    
-    /**
-     * Takes the remaining nodes handed back by finalize and frees their memory
-     * by calling the PEAK_DEALLOC with allocator on them.
-     *
-     * Doesn't handle the job context inside the nodes jobs.
-     * 
-     *
-     * @attention The same or a compatible allocator as the one used to allocate
-     *            the nodes must be used or behavior is undefined.
-     *
-     * @return PEAK_SUCCESS on successful freeing of nodes. nodes will point to
-     *         @c NULL.
-     *         Other error codes might be returned and show programmer errors
-     *         that must not happen as resources might be leaked, e.g.:
-     *         PEAK_ERROR or PEAK_DEALLOC specific error codes might be returned 
-     *         to show that an error occured trying to free the nodes. Memory
-     *         will not be leaked and the remaining nodes are accessible via
-     *         nodes.
-     */
-    int peak_unbound_fifo_queue_node_destroy_nodes(struct peak_unbound_fifo_queue_node_s **nodes,
-                                                 peak_allocator_t allocator);
-   
-    
-
     /**
      * Returns PEAK_TRUE if the queue is empty, otherwise returns PEAK_FALSE.
      *
@@ -240,9 +238,9 @@ extern "C" {
      *            decreases the performance of concurrently ongoing pushes
      *            and pops - use sparringly if at all.
      */
-    PEAK_BOOL peak_mpmc_unbound_locked_fifo_queue_is_empty(struct peak_mpmc_unbound_locked_fifo_queue_s *queue);
+    PEAK_BOOL peak_lib_locked_mpmc_fifo_queue_is_empty(struct peak_lib_locked_mpmc_fifo_queue_s *queue);
     
-
+    
     
     /**
      * Enqueues the node chain from add_first_node to add_last_node with 
@@ -270,9 +268,9 @@ extern "C" {
      * has a return value as other trypush implementations might need to return
      * an error code to state that the queue is full.
      */
-    int peak_mpmc_unbound_locked_fifo_queue_trypush(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
-                                                    struct peak_unbound_fifo_queue_node_s *add_first_node,
-                                                    struct peak_unbound_fifo_queue_node_s *add_last_node);
+    int peak_lib_locked_mpmc_fifo_queue_trypush(struct peak_lib_locked_mpmc_fifo_queue_s *queue,
+                                                struct peak_lib_queue_node_s *add_first_node,
+                                                struct peak_lib_queue_node_s *add_last_node);
     
     
     /**
@@ -284,14 +282,14 @@ extern "C" {
      *             an error code and pass the code via a function parameter
      *             (POSIX alike). Look at use in code to decide.
      */
-    struct peak_unbound_fifo_queue_node_s* peak_mpmc_unbound_locked_fifo_queue_trypop(struct peak_mpmc_unbound_locked_fifo_queue_s *queue);
+    struct peak_lib_queue_node_s* peak_lib_locked_mpmc_fifo_queue_trypop(struct peak_lib_locked_mpmc_fifo_queue_s *queue);
     
-
-
+    
+    
     
 #if defined(__cplusplus)
 } /* extern "C" */
 #endif
-    
 
-#endif /* PEAK_peak_mpmc_unbound_locked_fifo_queue_H */
+
+#endif /* PEAK_peak_lib_locked_mpmc_fifo_queue_H */

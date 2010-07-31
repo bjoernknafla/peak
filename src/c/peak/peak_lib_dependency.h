@@ -33,15 +33,13 @@
 /**
  * @file
  *
- * Internal helper functions for peak dependency - do not use and do not rely
- * on the existance of this file or on its functionality because it will be 
- * changed or removed without warning.
+ * Library implementer helper functions for peak dependency .
  *
  * Typically used for internal unit testing.
  */
 
-#ifndef PEAK_peak_internal_dependency_H
-#define PEAK_peak_internal_dependency_H
+#ifndef PEAK_peak_lib_dependency_H
+#define PEAK_peak_lib_dependency_H
 
 #include <peak/peak_stdint.h>
 #include <peak/peak_dependency.h>
@@ -66,8 +64,8 @@ extern "C" {
      *         PEAK_ERROR might be returned if dependency isn't valid or not
      *         correctly initialized.
      */
-    int peak_internal_dependency_get_dependency_count(peak_dependency_t dependency, 
-                                                      uint64_t* result);
+    int peak_lib_dependency_get_dependency_count(peak_dependency_t dependency, 
+                                                 uint64_t* result);
 
     /**
      * Only for internal testing, returns the number of waiting threads in
@@ -83,8 +81,8 @@ extern "C" {
      *         PEAK_ERROR might be returned if dependency isn't valid or not
      *         correctly initialized.
      */
-    int peak_internal_dependency_get_waiting_count(peak_dependency_t dependency, 
-                                                   uint64_t* result);
+    int peak_lib_dependency_get_waiting_count(peak_dependency_t dependency, 
+                                              uint64_t* result);
     
     
 #if defined(__cplusplus)
@@ -92,4 +90,4 @@ extern "C" {
 #endif
         
         
-#endif /* PEAK_peak_internal_dependency_H */
+#endif /* PEAK_peak_lib_dependency_H */

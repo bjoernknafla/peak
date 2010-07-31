@@ -14,6 +14,8 @@
 SUITE(peak_job_pool)
 {
     
+/*
+    
     TEST(pool_create_and_destroy_sequential)
     {
         CHECK(false);
@@ -315,6 +317,6 @@ SUITE(peak_job_pool)
     //             workgroups.
     
     
-    
+*/
     
 } // SUITE(peak_job_pool)

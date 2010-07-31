@@ -7,16 +7,25 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		320919BF119020AD00779B37 /* peak_job.h in Headers */ = {isa = PBXBuildFile; fileRef = 320919BD119020AD00779B37 /* peak_job.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		320919C0119020AD00779B37 /* peak_job.c in Sources */ = {isa = PBXBuildFile; fileRef = 320919BE119020AD00779B37 /* peak_job.c */; };
 		321E22B9108CA41F0080BFE6 /* libUnitTest++.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 321E22B8108CA41F0080BFE6 /* libUnitTest++.a */; };
 		321E22C9108CA4BE0080BFE6 /* unit_tests_main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 321E22A5108CA2A40080BFE6 /* unit_tests_main.cpp */; };
 		321E4387108DBD160080BFE6 /* peak_data_alignment_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 321E4386108DBD160080BFE6 /* peak_data_alignment_test.cpp */; };
+		321F2DC411FEEB04000D533B /* peak_lib_dispatcher_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 321F2DC311FEEB04000D533B /* peak_lib_dispatcher_test.cpp */; };
 		322BE8DC11FD88E700021038 /* peak_allocator_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 322BE8DB11FD88E700021038 /* peak_allocator_test.cpp */; };
 		322BE8F011FD89AC00021038 /* peak_job_pool_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 322BE8EF11FD89AC00021038 /* peak_job_pool_test.cpp */; };
 		326776E210A19A8900CC7576 /* peak_memory_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 326776E110A19A8900CC7576 /* peak_memory_test.cpp */; };
 		326776E610A19B5400CC7576 /* peak_stdint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 326776E510A19B5400CC7576 /* peak_stdint.cpp */; };
-		326776EA10A19CD800CC7576 /* peak_mpmc_unbound_locked_fifo_queue_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 326776E910A19CD800CC7576 /* peak_mpmc_unbound_locked_fifo_queue_test.cpp */; };
+		326776EA10A19CD800CC7576 /* peak_lib_locked_mpmc_fifo_queue_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 326776E910A19CD800CC7576 /* peak_lib_locked_mpmc_fifo_queue_test.cpp */; };
+		326DAECB1202F84A00E37A3D /* peak_lib_dispatcher.h in Headers */ = {isa = PBXBuildFile; fileRef = 326DAEC91202F84A00E37A3D /* peak_lib_dispatcher.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		326DAECC1202F84A00E37A3D /* peak_dispatcher.c in Sources */ = {isa = PBXBuildFile; fileRef = 326DAECA1202F84A00E37A3D /* peak_dispatcher.c */; };
+		326DAECE1202F97000E37A3D /* peak_dispatcher.h in Headers */ = {isa = PBXBuildFile; fileRef = 326DAECD1202F97000E37A3D /* peak_dispatcher.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		326DAED012030A0F00E37A3D /* peak_lib_work_item.h in Headers */ = {isa = PBXBuildFile; fileRef = 326DAECF12030A0F00E37A3D /* peak_lib_work_item.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		326DAED212030F6B00E37A3D /* peak_lib_work_item.c in Sources */ = {isa = PBXBuildFile; fileRef = 326DAED112030F6B00E37A3D /* peak_lib_work_item.c */; };
+		326DAED5120322A800E37A3D /* peak_lib_scheduler.h in Headers */ = {isa = PBXBuildFile; fileRef = 326DAED3120322A800E37A3D /* peak_lib_scheduler.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		326DAED6120322A800E37A3D /* peak_lib_scheduler.c in Sources */ = {isa = PBXBuildFile; fileRef = 326DAED4120322A800E37A3D /* peak_lib_scheduler.c */; };
+		326DAED91203256400E37A3D /* peak_execution_context.h in Headers */ = {isa = PBXBuildFile; fileRef = 326DAED71203256400E37A3D /* peak_execution_context.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		326DAEDA1203256400E37A3D /* peak_execution_context.c in Sources */ = {isa = PBXBuildFile; fileRef = 326DAED81203256400E37A3D /* peak_execution_context.c */; };
+		326DAEDC120325E300E37A3D /* peak_lib_execution_context.h in Headers */ = {isa = PBXBuildFile; fileRef = 326DAEDB120325E300E37A3D /* peak_lib_execution_context.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		32B5AE1411F4ACBC00D68EC5 /* peak_allocator_utility.h in Headers */ = {isa = PBXBuildFile; fileRef = 32B5AE1211F4ACBC00D68EC5 /* peak_allocator_utility.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		32B5AE1511F4ACBC00D68EC5 /* peak_allocator_utility.c in Sources */ = {isa = PBXBuildFile; fileRef = 32B5AE1311F4ACBC00D68EC5 /* peak_allocator_utility.c */; };
 		32B5AE1711F4B1D300D68EC5 /* peak_return_code.h in Headers */ = {isa = PBXBuildFile; fileRef = 32B5AE1611F4B1D300D68EC5 /* peak_return_code.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -26,8 +35,8 @@
 		32D38BCB117C9D8600D03C80 /* peak_memory.h in Headers */ = {isa = PBXBuildFile; fileRef = 32C1877910A0CC6D001852EE /* peak_memory.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		32D38BCC117C9D8700D03C80 /* peak_stdint.h in Headers */ = {isa = PBXBuildFile; fileRef = 32C187BF10A0DD89001852EE /* peak_stdint.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		32D38BCD117C9D8700D03C80 /* peak_stddef.h in Headers */ = {isa = PBXBuildFile; fileRef = 32C1872C10A075DD001852EE /* peak_stddef.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		32D38BCE117C9D8800D03C80 /* peak_mpmc_unbound_locked_fifo_queue.h in Headers */ = {isa = PBXBuildFile; fileRef = 32C16620109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		32D38BCF117C9D8900D03C80 /* peak_mpmc_unbound_locked_fifo_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C16621109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.c */; };
+		32D38BCE117C9D8800D03C80 /* peak_lib_locked_mpmc_fifo_queue.h in Headers */ = {isa = PBXBuildFile; fileRef = 32C16620109DF7FF001852EE /* peak_lib_locked_mpmc_fifo_queue.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		32D38BCF117C9D8900D03C80 /* peak_lib_locked_mpmc_fifo_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C16621109DF7FF001852EE /* peak_lib_locked_mpmc_fifo_queue.c */; };
 		32D38BD0117C9D8900D03C80 /* peak_allocator.h in Headers */ = {isa = PBXBuildFile; fileRef = 32C1872D10A08F54001852EE /* peak_allocator.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		32D38BD1117C9D8A00D03C80 /* peak_allocator.c in Sources */ = {isa = PBXBuildFile; fileRef = 32C1872E10A08F54001852EE /* peak_allocator.c */; };
 		32D38BD2117C9D8B00D03C80 /* peak_data_alignment.h in Headers */ = {isa = PBXBuildFile; fileRef = 32C1874F10A0991C001852EE /* peak_data_alignment.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -37,7 +46,7 @@
 		32F273961181E9F6002CEA45 /* peak_dependency_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 32F273951181E9F6002CEA45 /* peak_dependency_test.cpp */; };
 		32F273991181EA05002CEA45 /* peak_dependency.h in Headers */ = {isa = PBXBuildFile; fileRef = 32F273971181EA05002CEA45 /* peak_dependency.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		32F2739A1181EA05002CEA45 /* peak_dependency.c in Sources */ = {isa = PBXBuildFile; fileRef = 32F273981181EA05002CEA45 /* peak_dependency.c */; };
-		32F2739D1181EA9A002CEA45 /* peak_internal_dependency.h in Headers */ = {isa = PBXBuildFile; fileRef = 32F2739B1181EA9A002CEA45 /* peak_internal_dependency.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		32F2739D1181EA9A002CEA45 /* peak_lib_dependency.h in Headers */ = {isa = PBXBuildFile; fileRef = 32F2739B1181EA9A002CEA45 /* peak_lib_dependency.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		32F2EDC9118C356500A0B9D7 /* peak_raw_dependency.h in Headers */ = {isa = PBXBuildFile; fileRef = 32F2EDC7118C356500A0B9D7 /* peak_raw_dependency.h */; settings = {ATTRIBUTES = (Public, ); }; };
 /* End PBXBuildFile section */
 
@@ -213,8 +222,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		320919BD119020AD00779B37 /* peak_job.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_job.h; sourceTree = "<group>"; };
-		320919BE119020AD00779B37 /* peak_job.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = peak_job.c; sourceTree = "<group>"; };
 		321E229D108C9A450080BFE6 /* COPYRIGHT.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = COPYRIGHT.txt; path = ../../../COPYRIGHT.txt; sourceTree = SOURCE_ROOT; };
 		321E229F108C9A450080BFE6 /* README.markdown */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.markdown; path = ../../../README.markdown; sourceTree = SOURCE_ROOT; };
 		321E22A5108CA2A40080BFE6 /* unit_tests_main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = unit_tests_main.cpp; sourceTree = "<group>"; };
@@ -226,19 +233,30 @@
 		321E22B8108CA41F0080BFE6 /* libUnitTest++.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libUnitTest++.a"; sourceTree = UNITTESTCPP; };
 		321E4386108DBD160080BFE6 /* peak_data_alignment_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_data_alignment_test.cpp; sourceTree = "<group>"; };
 		321E440A108F49570080BFE6 /* error_and_exception_handling.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = error_and_exception_handling.txt; sourceTree = "<group>"; };
+		321F2DC311FEEB04000D533B /* peak_lib_dispatcher_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_lib_dispatcher_test.cpp; sourceTree = "<group>"; };
 		322BE8DB11FD88E700021038 /* peak_allocator_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_allocator_test.cpp; sourceTree = "<group>"; };
 		322BE8EF11FD89AC00021038 /* peak_job_pool_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_job_pool_test.cpp; sourceTree = "<group>"; };
 		324435941195E007003D032C /* test_allocator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = test_allocator.h; sourceTree = "<group>"; };
 		326776E110A19A8900CC7576 /* peak_memory_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_memory_test.cpp; sourceTree = "<group>"; };
 		326776E510A19B5400CC7576 /* peak_stdint.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_stdint.cpp; sourceTree = "<group>"; };
-		326776E910A19CD800CC7576 /* peak_mpmc_unbound_locked_fifo_queue_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_mpmc_unbound_locked_fifo_queue_test.cpp; sourceTree = "<group>"; };
+		326776E910A19CD800CC7576 /* peak_lib_locked_mpmc_fifo_queue_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_lib_locked_mpmc_fifo_queue_test.cpp; sourceTree = "<group>"; };
+		326DAEC91202F84A00E37A3D /* peak_lib_dispatcher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_lib_dispatcher.h; sourceTree = "<group>"; };
+		326DAECA1202F84A00E37A3D /* peak_dispatcher.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = peak_dispatcher.c; sourceTree = "<group>"; };
+		326DAECD1202F97000E37A3D /* peak_dispatcher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_dispatcher.h; sourceTree = "<group>"; };
+		326DAECF12030A0F00E37A3D /* peak_lib_work_item.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_lib_work_item.h; sourceTree = "<group>"; };
+		326DAED112030F6B00E37A3D /* peak_lib_work_item.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = peak_lib_work_item.c; sourceTree = "<group>"; };
+		326DAED3120322A800E37A3D /* peak_lib_scheduler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_lib_scheduler.h; sourceTree = "<group>"; };
+		326DAED4120322A800E37A3D /* peak_lib_scheduler.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = peak_lib_scheduler.c; sourceTree = "<group>"; };
+		326DAED71203256400E37A3D /* peak_execution_context.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_execution_context.h; sourceTree = "<group>"; };
+		326DAED81203256400E37A3D /* peak_execution_context.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = peak_execution_context.c; sourceTree = "<group>"; };
+		326DAEDB120325E300E37A3D /* peak_lib_execution_context.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_lib_execution_context.h; sourceTree = "<group>"; };
 		328DEBBC117C586700F7A0C0 /* poc.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = poc.xcodeproj; path = build_env/xcode_3_2/poc/poc.xcodeproj; sourceTree = POC; };
 		32B5AE1211F4ACBC00D68EC5 /* peak_allocator_utility.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_allocator_utility.h; sourceTree = "<group>"; };
 		32B5AE1311F4ACBC00D68EC5 /* peak_allocator_utility.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = peak_allocator_utility.c; sourceTree = "<group>"; };
 		32B5AE1611F4B1D300D68EC5 /* peak_return_code.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_return_code.h; sourceTree = "<group>"; };
 		32C1661F109DF105001852EE /* concept_names.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = concept_names.txt; sourceTree = "<group>"; };
-		32C16620109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_mpmc_unbound_locked_fifo_queue.h; sourceTree = "<group>"; };
-		32C16621109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = peak_mpmc_unbound_locked_fifo_queue.c; sourceTree = "<group>"; };
+		32C16620109DF7FF001852EE /* peak_lib_locked_mpmc_fifo_queue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_lib_locked_mpmc_fifo_queue.h; sourceTree = "<group>"; };
+		32C16621109DF7FF001852EE /* peak_lib_locked_mpmc_fifo_queue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = peak_lib_locked_mpmc_fifo_queue.c; sourceTree = "<group>"; };
 		32C18718109F5E78001852EE /* amp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = amp.xcodeproj; path = build_env/xcode_3_2/amp/amp.xcodeproj; sourceTree = AMP; };
 		32C18725109F5ED9001852EE /* amp.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = amp.xcconfig; sourceTree = "<group>"; };
 		32C1872C10A075DD001852EE /* peak_stddef.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_stddef.h; sourceTree = "<group>"; };
@@ -261,7 +279,7 @@
 		32F273951181E9F6002CEA45 /* peak_dependency_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peak_dependency_test.cpp; sourceTree = "<group>"; };
 		32F273971181EA05002CEA45 /* peak_dependency.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_dependency.h; sourceTree = "<group>"; };
 		32F273981181EA05002CEA45 /* peak_dependency.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = peak_dependency.c; sourceTree = "<group>"; };
-		32F2739B1181EA9A002CEA45 /* peak_internal_dependency.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_internal_dependency.h; sourceTree = "<group>"; };
+		32F2739B1181EA9A002CEA45 /* peak_lib_dependency.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_lib_dependency.h; sourceTree = "<group>"; };
 		32F2EDC7118C356500A0B9D7 /* peak_raw_dependency.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = peak_raw_dependency.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -396,14 +414,22 @@
 				32C1877C10A0CD72001852EE /* peak_memory_msvc.c */,
 				32B5AE1211F4ACBC00D68EC5 /* peak_allocator_utility.h */,
 				32B5AE1311F4ACBC00D68EC5 /* peak_allocator_utility.c */,
-				32C16620109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.h */,
-				32C16621109DF7FF001852EE /* peak_mpmc_unbound_locked_fifo_queue.c */,
+				326DAECF12030A0F00E37A3D /* peak_lib_work_item.h */,
+				326DAED112030F6B00E37A3D /* peak_lib_work_item.c */,
+				32C16620109DF7FF001852EE /* peak_lib_locked_mpmc_fifo_queue.h */,
+				32C16621109DF7FF001852EE /* peak_lib_locked_mpmc_fifo_queue.c */,
 				32F273971181EA05002CEA45 /* peak_dependency.h */,
 				32F2EDC7118C356500A0B9D7 /* peak_raw_dependency.h */,
-				32F2739B1181EA9A002CEA45 /* peak_internal_dependency.h */,
+				32F2739B1181EA9A002CEA45 /* peak_lib_dependency.h */,
 				32F273981181EA05002CEA45 /* peak_dependency.c */,
-				320919BD119020AD00779B37 /* peak_job.h */,
-				320919BE119020AD00779B37 /* peak_job.c */,
+				326DAECD1202F97000E37A3D /* peak_dispatcher.h */,
+				326DAEC91202F84A00E37A3D /* peak_lib_dispatcher.h */,
+				326DAECA1202F84A00E37A3D /* peak_dispatcher.c */,
+				326DAED3120322A800E37A3D /* peak_lib_scheduler.h */,
+				326DAED4120322A800E37A3D /* peak_lib_scheduler.c */,
+				326DAED71203256400E37A3D /* peak_execution_context.h */,
+				326DAEDB120325E300E37A3D /* peak_lib_execution_context.h */,
+				326DAED81203256400E37A3D /* peak_execution_context.c */,
 			);
 			path = peak;
 			sourceTree = "<group>";
@@ -417,9 +443,10 @@
 				326776E110A19A8900CC7576 /* peak_memory_test.cpp */,
 				322BE8DB11FD88E700021038 /* peak_allocator_test.cpp */,
 				326776E510A19B5400CC7576 /* peak_stdint.cpp */,
-				326776E910A19CD800CC7576 /* peak_mpmc_unbound_locked_fifo_queue_test.cpp */,
+				326776E910A19CD800CC7576 /* peak_lib_locked_mpmc_fifo_queue_test.cpp */,
 				32F273951181E9F6002CEA45 /* peak_dependency_test.cpp */,
 				322BE8EF11FD89AC00021038 /* peak_job_pool_test.cpp */,
+				321F2DC311FEEB04000D533B /* peak_lib_dispatcher_test.cpp */,
 			);
 			name = test;
 			path = ../../../test;
@@ -496,15 +523,20 @@
 				32D38BCB117C9D8600D03C80 /* peak_memory.h in Headers */,
 				32D38BCC117C9D8700D03C80 /* peak_stdint.h in Headers */,
 				32D38BCD117C9D8700D03C80 /* peak_stddef.h in Headers */,
-				32D38BCE117C9D8800D03C80 /* peak_mpmc_unbound_locked_fifo_queue.h in Headers */,
+				32D38BCE117C9D8800D03C80 /* peak_lib_locked_mpmc_fifo_queue.h in Headers */,
 				32D38BD0117C9D8900D03C80 /* peak_allocator.h in Headers */,
 				32D38BD2117C9D8B00D03C80 /* peak_data_alignment.h in Headers */,
 				32F273991181EA05002CEA45 /* peak_dependency.h in Headers */,
-				32F2739D1181EA9A002CEA45 /* peak_internal_dependency.h in Headers */,
+				32F2739D1181EA9A002CEA45 /* peak_lib_dependency.h in Headers */,
 				32F2EDC9118C356500A0B9D7 /* peak_raw_dependency.h in Headers */,
-				320919BF119020AD00779B37 /* peak_job.h in Headers */,
 				32B5AE1411F4ACBC00D68EC5 /* peak_allocator_utility.h in Headers */,
 				32B5AE1711F4B1D300D68EC5 /* peak_return_code.h in Headers */,
+				326DAECB1202F84A00E37A3D /* peak_lib_dispatcher.h in Headers */,
+				326DAECE1202F97000E37A3D /* peak_dispatcher.h in Headers */,
+				326DAED012030A0F00E37A3D /* peak_lib_work_item.h in Headers */,
+				326DAED5120322A800E37A3D /* peak_lib_scheduler.h in Headers */,
+				326DAED91203256400E37A3D /* peak_execution_context.h in Headers */,
+				326DAEDC120325E300E37A3D /* peak_lib_execution_context.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -749,10 +781,11 @@
 				321E4387108DBD160080BFE6 /* peak_data_alignment_test.cpp in Sources */,
 				326776E210A19A8900CC7576 /* peak_memory_test.cpp in Sources */,
 				326776E610A19B5400CC7576 /* peak_stdint.cpp in Sources */,
-				326776EA10A19CD800CC7576 /* peak_mpmc_unbound_locked_fifo_queue_test.cpp in Sources */,
+				326776EA10A19CD800CC7576 /* peak_lib_locked_mpmc_fifo_queue_test.cpp in Sources */,
 				32F273961181E9F6002CEA45 /* peak_dependency_test.cpp in Sources */,
 				322BE8DC11FD88E700021038 /* peak_allocator_test.cpp in Sources */,
 				322BE8F011FD89AC00021038 /* peak_job_pool_test.cpp in Sources */,
+				321F2DC411FEEB04000D533B /* peak_lib_dispatcher_test.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -761,12 +794,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				32D38BCA117C9D8600D03C80 /* peak_memory_generic.c in Sources */,
-				32D38BCF117C9D8900D03C80 /* peak_mpmc_unbound_locked_fifo_queue.c in Sources */,
+				32D38BCF117C9D8900D03C80 /* peak_lib_locked_mpmc_fifo_queue.c in Sources */,
 				32D38BD1117C9D8A00D03C80 /* peak_allocator.c in Sources */,
 				32D38BD3117C9D8B00D03C80 /* peak_data_alignment.c in Sources */,
 				32F2739A1181EA05002CEA45 /* peak_dependency.c in Sources */,
-				320919C0119020AD00779B37 /* peak_job.c in Sources */,
 				32B5AE1511F4ACBC00D68EC5 /* peak_allocator_utility.c in Sources */,
+				326DAECC1202F84A00E37A3D /* peak_dispatcher.c in Sources */,
+				326DAED212030F6B00E37A3D /* peak_lib_work_item.c in Sources */,
+				326DAED6120322A800E37A3D /* peak_lib_scheduler.c in Sources */,
+				326DAEDA1203256400E37A3D /* peak_execution_context.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

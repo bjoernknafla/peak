@@ -41,7 +41,7 @@
 #include "peak_stdint.h"
 #include "peak_return_code.h"
 #include "peak_raw_dependency.h"
-#include "peak_internal_dependency.h"
+#include "peak_lib_dependency.h"
 
 
 
@@ -142,8 +142,8 @@ int peak_raw_dependency_finalize(peak_dependency_t dependency)
 
 
 
-int peak_internal_dependency_get_dependency_count(peak_dependency_t dependency,
-                                                  uint64_t* result)
+int peak_lib_dependency_get_dependency_count(peak_dependency_t dependency,
+                                             uint64_t* result)
 {
     int errc = PEAK_UNSUPPORTED;
     
@@ -166,8 +166,8 @@ int peak_internal_dependency_get_dependency_count(peak_dependency_t dependency,
 
 
 
-int peak_internal_dependency_get_waiting_count(peak_dependency_t dependency, 
-                                               uint64_t* result)
+int peak_lib_dependency_get_waiting_count(peak_dependency_t dependency, 
+                                          uint64_t* result)
 {
     int errc = PEAK_UNSUPPORTED;
     

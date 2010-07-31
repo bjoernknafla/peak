@@ -54,6 +54,7 @@ extern "C" {
         peak_unsupported_return_code = amp_unsupported_return_code, /**< Operation not supported by backend */
         peak_timeout_return_code = amp_timeout_return_code, /**< Waited on busy resource till timeout */
         peak_out_of_range_return_code = ERANGE, /**< Result is out of range */
+        peak_try_again_code = EAGAIN, /**< Resource was not available - try again */
         peak_error_return_code = amp_error_return_code /**< Another error occured */
     };
     
@@ -66,6 +67,7 @@ extern "C" {
 #define PEAK_TIMEOUT (peak_timeout_return_code)
 #define PEAK_UNSUPPORTED (peak_unsupported_return_code)
 #define PEAK_OUT_OF_RANGE (peak_out_of_range_return_code)
+#define PEAK_TRY_AGAIN (peak_try_again_code)
 #define PEAK_ERROR (peak_error_return_code)
     
     

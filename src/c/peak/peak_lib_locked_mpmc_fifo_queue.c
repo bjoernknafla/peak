@@ -41,7 +41,7 @@
  *             available).
  */
 
-#include "peak_mpmc_unbound_locked_fifo_queue.h"
+#include "peak_lib_locked_mpmc_fifo_queue.h"
 
 #include <assert.h>
 #include <stddef.h>
@@ -52,20 +52,82 @@
 
 
 
-static void peak_unbound_fifo_queue_node_clear(struct peak_unbound_fifo_queue_node_s *node);
-static void peak_unbound_fifo_queue_node_clear(struct peak_unbound_fifo_queue_node_s *node)
+static void peak_lib_queue_node_clear(struct peak_lib_queue_node_s *node);
+static void peak_lib_queue_node_clear(struct peak_lib_queue_node_s *node)
 {
     assert(NULL != node);
     
     node->next = NULL;
     
-    peak_job_invalidate(&node->job);
+    peak_lib_work_item_invalidate(&node->work_item);
 }
 
 
 
-int peak_mpmc_unbound_locked_fifo_queue_init(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
-                                             struct peak_unbound_fifo_queue_node_s *sentry_node)
+#pragma mark peak_unbound_fifo_queue_node
+
+PEAK_BOOL peak_lib_queue_node_is_chain_valid(struct peak_lib_queue_node_s const* chain_start_node,
+                                             struct peak_lib_queue_node_s const* chain_end_node)
+{    
+    struct peak_lib_queue_node_s const* node = chain_start_node;
+    PEAK_BOOL retval = PEAK_FALSE;
+    
+    while (NULL != node) {
+        
+        if (PEAK_FALSE == peak_is_aligned(node, 
+                                          PEAK_ATOMIC_ACCESS_ALIGNMENT)) {
+            
+            break;
+        }
+        
+        if (node == chain_end_node) {
+            retval = PEAK_TRUE;
+            break;
+        } else {
+            node = node->next;
+        }
+        
+    }
+    
+    return retval;
+}
+
+
+
+int peak_lib_queue_node_destroy_aligned_nodes(struct peak_lib_queue_node_s **nodes,
+                                              
+                                              peak_allocator_t allocator)
+{
+    int retval = PEAK_SUCCESS;
+    struct peak_lib_queue_node_s *node = NULL;
+    
+    assert(NULL != nodes);
+    assert(NULL != allocator);
+    
+    node = *nodes;
+    while (NULL != node) {
+        struct peak_lib_queue_node_s *next = node->next;
+        
+        retval = PEAK_DEALLOC_ALIGNED(allocator, node);
+        if (PEAK_SUCCESS != retval) {
+            assert(PEAK_SUCCESS == retval);
+            break;
+        }
+        
+        node = next;
+    }
+    
+    *nodes = node;
+    
+    return retval;
+}
+
+
+
+#pragma mark peak_mpmc_unbound_locked_fifo_queue
+
+int peak_lib_locked_mpmc_fifo_queue_init(struct peak_lib_locked_mpmc_fifo_queue_s *queue,
+                                         struct peak_lib_queue_node_s *sentry_node)
 {
     int retval = AMP_UNSUPPORTED;
     
@@ -86,7 +148,7 @@ int peak_mpmc_unbound_locked_fifo_queue_init(struct peak_mpmc_unbound_locked_fif
     if (AMP_SUCCESS != retval) {
         int rv = amp_raw_mutex_finalize(&queue->producer_mutex);
         assert(AMP_SUCCESS == rv);
-
+        
         return retval;
     }
     
@@ -101,7 +163,7 @@ int peak_mpmc_unbound_locked_fifo_queue_init(struct peak_mpmc_unbound_locked_fif
         return retval;
     }
     
-    peak_unbound_fifo_queue_node_clear(sentry_node);
+    peak_lib_queue_node_clear(sentry_node);
     
     queue->last_produced = sentry_node;
     queue->last_consumed = sentry_node;
@@ -115,8 +177,8 @@ int peak_mpmc_unbound_locked_fifo_queue_init(struct peak_mpmc_unbound_locked_fif
 
 
 
-int peak_mpmc_unbound_locked_fifo_queue_finalize(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
-                                                 struct peak_unbound_fifo_queue_node_s **remaining_nodes)
+int peak_lib_locked_mpmc_fifo_queue_finalize(struct peak_lib_locked_mpmc_fifo_queue_s *queue,
+                                             struct peak_lib_queue_node_s **remaining_nodes)
 {    
     int retval0 = PEAK_ERROR;
     int retval1 = PEAK_ERROR;
@@ -124,13 +186,13 @@ int peak_mpmc_unbound_locked_fifo_queue_finalize(struct peak_mpmc_unbound_locked
     
     assert(NULL != queue);
     assert(NULL != remaining_nodes);
-
+    
     
     /* Hand over node memory to allow memory deallocating even if one of the
      * mutexes isn't finalized successfully.
      */
     *remaining_nodes = queue->last_consumed;
-
+    
     queue->last_consumed = NULL;
     queue->last_produced = NULL;
     
@@ -158,71 +220,13 @@ int peak_mpmc_unbound_locked_fifo_queue_finalize(struct peak_mpmc_unbound_locked
 
 
 
-PEAK_BOOL peak_unbound_fifo_queue_node_is_chain_valid(struct peak_unbound_fifo_queue_node_s const* chain_start_node,
-                                                      struct peak_unbound_fifo_queue_node_s const* chain_end_node)
-{    
-    struct peak_unbound_fifo_queue_node_s const* node = chain_start_node;
-    PEAK_BOOL retval = PEAK_FALSE;
-    
-    while (NULL != node) {
-        
-        if (PEAK_FALSE == peak_is_aligned(node, 
-                                          PEAK_ATOMIC_ACCESS_ALIGNMENT)) {
-            
-            break;
-        }
-        
-        if (node == chain_end_node) {
-            retval = PEAK_TRUE;
-            break;
-        } else {
-            node = node->next;
-        }
-        
-    }
-    
-    return retval;
-}
-
-
-
-int peak_unbound_fifo_queue_node_destroy_nodes(struct peak_unbound_fifo_queue_node_s **nodes,
-                                             peak_allocator_t allocator)
-{
-    int retval = PEAK_SUCCESS;
-    struct peak_unbound_fifo_queue_node_s *node = NULL;
-    
-    assert(NULL != nodes);
-    assert(NULL != allocator);
-    
-    node = *nodes;
-    while (NULL != node) {
-        struct peak_unbound_fifo_queue_node_s *next = node->next;
-        
-        retval = PEAK_DEALLOC(allocator, node);
-        assert(PEAK_SUCCESS == retval);
-        if (PEAK_SUCCESS != retval) {
-            
-            break;
-        }
-        
-        node = next;
-    }
-    
-    *nodes = node;
-    
-    return retval;
-}
-
-
-
-PEAK_BOOL peak_mpmc_unbound_locked_fifo_queue_is_empty(struct peak_mpmc_unbound_locked_fifo_queue_s *queue)
+PEAK_BOOL peak_lib_locked_mpmc_fifo_queue_is_empty(struct peak_lib_locked_mpmc_fifo_queue_s *queue)
 {
     int internal_retval = AMP_ERROR;
     PEAK_BOOL retval = PEAK_FALSE;
     
     assert(NULL != queue);
-
+    
     
     internal_retval = amp_mutex_lock(&queue->consumer_mutex);
     assert(AMP_SUCCESS == internal_retval);
@@ -248,9 +252,9 @@ PEAK_BOOL peak_mpmc_unbound_locked_fifo_queue_is_empty(struct peak_mpmc_unbound_
 
 
 
-int peak_mpmc_unbound_locked_fifo_queue_trypush(struct peak_mpmc_unbound_locked_fifo_queue_s *queue,
-                                                struct peak_unbound_fifo_queue_node_s *add_first_node,
-                                                struct peak_unbound_fifo_queue_node_s *add_last_node)
+int peak_lib_locked_mpmc_fifo_queue_trypush(struct peak_lib_locked_mpmc_fifo_queue_s *queue,
+                                            struct peak_lib_queue_node_s *add_first_node,
+                                            struct peak_lib_queue_node_s *add_last_node)
 {
     int retval = AMP_UNSUPPORTED;
     
@@ -258,10 +262,10 @@ int peak_mpmc_unbound_locked_fifo_queue_trypush(struct peak_mpmc_unbound_locked_
     assert(NULL != add_first_node);
     assert(NULL != add_last_node);
     assert(NULL == add_last_node->next);
-    assert(PEAK_TRUE == peak_unbound_fifo_queue_node_is_chain_valid(add_first_node, add_last_node));
+    assert(PEAK_TRUE == peak_lib_queue_node_is_chain_valid(add_first_node, add_last_node));
     assert(peak_is_aligned((queue->last_produced), PEAK_ATOMIC_ACCESS_ALIGNMENT));
     assert(peak_is_aligned((queue->last_produced->next), PEAK_ATOMIC_ACCESS_ALIGNMENT));
-    assert(peak_unbound_fifo_queue_node_is_chain_valid(add_first_node, add_last_node));
+    assert(peak_lib_queue_node_is_chain_valid(add_first_node, add_last_node));
     
     add_last_node->next = NULL;
     
@@ -274,7 +278,7 @@ int peak_mpmc_unbound_locked_fifo_queue_trypush(struct peak_mpmc_unbound_locked_
          * TODO: @todo When locking the next two instructions can be swapped
          *             to speed up dequeueing.
          */
-        struct peak_unbound_fifo_queue_node_s *old_last_produced = queue->last_produced;
+        struct peak_lib_queue_node_s *old_last_produced = queue->last_produced;
         queue->last_produced = add_last_node;
         
         
@@ -302,15 +306,15 @@ int peak_mpmc_unbound_locked_fifo_queue_trypush(struct peak_mpmc_unbound_locked_
     }
     retval = amp_mutex_unlock(&queue->producer_mutex);
     assert(AMP_SUCCESS == retval);
-           
+    
     return PEAK_SUCCESS;
 }
 
 
 
-struct peak_unbound_fifo_queue_node_s* peak_mpmc_unbound_locked_fifo_queue_trypop(struct peak_mpmc_unbound_locked_fifo_queue_s *queue)
+struct peak_lib_queue_node_s* peak_lib_locked_mpmc_fifo_queue_trypop(struct peak_lib_locked_mpmc_fifo_queue_s *queue)
 {
-    struct peak_unbound_fifo_queue_node_s *consume = NULL;
+    struct peak_lib_queue_node_s *consume = NULL;
     int internal_retcode = AMP_UNSUPPORTED;
     
     assert(NULL != queue);
@@ -343,7 +347,7 @@ struct peak_unbound_fifo_queue_node_s* peak_mpmc_unbound_locked_fifo_queue_trypo
          * TODO: @todo When not handling the locks as scopes the code
          *             can be more streamined. Decide if to streamline the code.
          */
-        struct peak_unbound_fifo_queue_node_s *new_last = NULL;
+        struct peak_lib_queue_node_s *new_last = NULL;
         
         internal_retcode = amp_mutex_lock(&queue->next_mutex);
         assert(AMP_SUCCESS == internal_retcode);
@@ -367,9 +371,9 @@ struct peak_unbound_fifo_queue_node_s* peak_mpmc_unbound_locked_fifo_queue_trypo
             
             /* Copy the data into the node to return.
              */
-            consume->job = new_last->job;
+            consume->work_item = new_last->work_item;
             
-            peak_job_invalidate(&new_last->job);
+            peak_lib_work_item_invalidate(&new_last->work_item);
         }
     }
     internal_retcode = amp_mutex_unlock(&queue->consumer_mutex);
