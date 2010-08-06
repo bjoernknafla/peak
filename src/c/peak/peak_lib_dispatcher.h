@@ -116,6 +116,25 @@ extern "C" {
                                      peak_allocator_t node_allocator);
     
     
+#if 0
+    int peak_lib_dispatcher_accepts_connection_requests_from_node(peak_dispatcher_t dispatcher,
+                                                                  peak_lib_compute_node_t node);
+    
+    /**
+     * PEAK_SUCCESS, PEAK_BUSY, PEAK_TRY_AGAIN, PEAK_LIB_CONNECTION_REJECTED, PEAK_LIB_CONNECTION_FINISHED.
+     */
+    int peak_lib_dispatcher_tryconnect_scheduler(peak_dispatcher_t dispatcher,
+                                                 peak_lib_scheduler_t scheduler);
+    
+    
+    int peak_lib_dispatcher_connect_scheduler_with_loot(peak_dispatcher_t dispatcher,
+                                                 peak_lib_scheduler_t scheduler);
+    
+    
+    int peak_lib_dispatcher_disconnect(peak_dispatcher_t dispatcher,
+                                       peak_lib_scheduler_t scheduler);
+#endif /* 0 */
+    
     /**
      * Tries to dispatch a job onto the dispatcher's fifo queue.
      *
@@ -124,6 +143,8 @@ extern "C" {
      * @return PEAK_SUCCESS on successful dispatching.
      *         PEAK_TRY_AGAIN if fifo queue was full or congested.
      *         PEAK_NOMEM if not enough memory was available.
+     *
+     * TODO: @todo Decide if to add job or continuation to the name?
      */
     int peak_lib_trydispatch_fifo(peak_dispatcher_t dispatcher,
                                   peak_allocator_t node_allocator,
@@ -141,6 +162,8 @@ extern "C" {
      * @return PEAK_SUCCESS on successful popping and invocation of a job.
      *         PEAK_TRY_AGAIN if no job could be popped - the fifo
      *         queue might have been empty.
+     *
+     * TODO: @todo Decide if to add job or continuation to the name?
      */
     int peak_lib_dispatcher_trypop_and_invoke_from_fifo(peak_dispatcher_t dispatcher,
                                                         peak_allocator_t node_allocator,

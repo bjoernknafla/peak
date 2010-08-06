@@ -11,8 +11,259 @@
 #include <UnitTest++.h>
 
 
+
+namespace {
+    
+    /**
+     * TODO: @todo Add detection and mapping for multiple cache hierarchies and
+     *             packages.
+     */
+    struct peak_hardware_s {
+        
+    };
+    
+    
+    
+    struct peak_engine_configuration_s {
+        
+    };
+    
+    /*
+    struct peak_dispatcher_configuration_s {
+        // move_on_affinity_capture; // Would need indirection handler, won't do that now.
+        
+        is_affine;
+        
+        
+        only_sub_nodes_of_currently_active_node_allowed; // see below
+        
+        capture_***_affinity_for_lifetime;
+        captures_package_affinity_for_cycle; // As long as at least one worker is inside the dispatcher the affinity is captured to the worker or its groups or tile or package and as long as wokers of this cpatures group are in it no others can enter. After they left other might be allowed to use it.
+        captures_tile_affinity_for_cycle;
+        captures_workgroup_affinity_for_cycle; // if no sub-nodes than node affinity.
+        capture_worker_affinity_for_cycle;
+        
+        allowed_sub_nodes_range_begin; // sub-nodes of node added to. Is affine to node added to.
+        allowed_sub_nodes_range_length;
+        
+        max_bound_worker_count;
+        min_bound_worker_count;
+        
+        max_active_worker_count;
+        min_active_worker_count;
+        
+        inactive_means_sleep;
+        inactive_means_proceed_to_next_dispatcher;
+        
+        has_fifo;
+        has_wsq;
+    };
+    */
+    
+    
+    /* Maps engine hierarchy to hardware of computer, no selection of 
+     * sub-nodes in the hierarchy to pin the engine to.
+     *
+     * First allocator is uses for core engine structure allocation while
+     * the second allocator is used internally to access memory.
+     * The second allocator is assumed to be thread-safe.
+     *
+     * TODO: @todo Add an allocator concept that adapts the second allocator
+     *             to provide thread-safety without requeiring it from the
+     *             second allocator.
+     */
+    // peak_engine_create_default(&engine,
+    //                           PEAK_DEFAULT_ALLOCATOR, /* Allocate core engine */
+    //                           PEAK_DEFAULT_ALLOCATOR); /* Foundation for execution context local allocators */
+    
+} // anonymous namespace
+
+
+
+
+
 SUITE(peak_job_pool)
 {
+ 
+    
+    TEST(default_engine_configuration)
+    {
+        peak_engine_configuration_t configuration = PEAK_ENGINE_CONFIGURATION_UNINITIALIZED;
+        
+        int errc = peak_engine_configuration_create_default(&configuration,
+                                                            PEAK_DEFAULT_ALLOCATOR,
+                                                            peak_hardware_default_mapping);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        
+        
+        amp_platform_t platform = AMP_PLATFORM_UNINITIALIZED;
+        errc = amp_platform_create(&platform, AMP_DEFAULT_ALLOCATOR);
+        assert(AMP_SUCCESS == errc);
+        
+        size_t concurrency_level = 1;
+        errc = amp_platform_get_concurrency_level(platform, &concurrency_level);
+        assert(AMP_SUCCESS == errc);
+        
+        errc = amp_platform_destroy(platform, AMP_DEFAULT_ALLOCATOR);
+        assert(AMP_SUCCESS == errc);
+        
+                
+        // TODO: @todo Add better hardware hierarchy detection and checks.
+        // Will fail on hardware with more cores grouped around caches the 
+        // moment peak detects such hardware and is able to adapt to it. 
+        // In such an event more assumptions of this test need to be checked.
+        CHECK_EQUAL(static_cast<size_t>(1), 
+                    peak_engine_configuration_get_total_package_count(configuration));
+        
+        CHECK_EQUAL(static_cast<size_t>(1), 
+                    peak_engine_configuration_get_total_workgroup_count(configuration));
+        
+        CHECK_EQUAL(concurrency_level, 
+                    peak_engine_configuration_get_total_worker_count(configuration));
+
+        
+        
+        errc = peak_engine_configuration_destroy(&configuration,
+                                                 PEAK_DEFAULT_ALLOCATOR);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        
+    }
+     
+    
+    
+    TEST(default_engine_configuration_dispatchers)
+    {
+        // Default engine configuration: one machine level dispatcher, one 
+        // dispatcher associated with the main or setup thread.
+        
+        peak_engine_configuration_t configuration = PEAK_ENGINE_CONFIGURATION_UNINITIALIZED;
+        
+        int errc = peak_engine_configuration_create_default(&configuration,
+                                                            PEAK_DEFAULT_ALLOCATOR,
+                                                            peak_hardware_default_mapping);
+        assert(PEAK_SUCCESS == errc);
+        
+        
+        peak_dispatcher_key_t dispatcher_key;
+        errc = peak_engine_configuration_get_default_dispatcher_key(configuration,
+                                                                    &dispatcher_key);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        CHECK(PEAK_DISPATCHER_KEY_INVALID != dispatcher_key);
+        
+        struct peak_raw_dispatcher_configuration_s dispatcher_configuration;
+        errc = peak_engine_configuration_get_default_dispatcher_configuration(configuration,
+                                                                              &dispatcher_configuration);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        
+        // TODO: @todo Add checks for the configuration settings.
+        CHECK(false);
+        
+        struct peak_raw_worker_configuration_s worker_configuration;
+        errc = peak_engine_configuration_get_worker_configuration(configuration,
+                                                                  0, /* Package */
+                                                                  0, /* Workgroup */
+                                                                  0, /* Worker */
+                                                                  &worker_configuration);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
+        
+        // Per default the main or setup thread controls the execution context 
+        // of the first worker of
+        // the first workgroup of the first package of the machine and needs
+        // to explicitly call the worker to execute.
+        CHECK_EQUAL(PEAK_WORKER_USER_EXECUTION_CONFIGURATION,
+                    peak_worker_configuration_get_execution_configuration());
+        
+        // TODO: @todo Add further worker configuration checks, e.g. for FIFO 
+        //             and work-stealing queue.
+        CHECK(false);
+        
+        errc = peak_engine_configuration_destroy(&configuration,
+                                                 PEAK_DEFAULT_ALLOCATOR);
+        assert(PEAK_SUCCESS == errc);
+    }
+        
+        
+
+    TEST(default_engine_configuration_add_affinity_dispatcher)
+    {
+        peak_engine_configuration_t configuration = PEAK_ENGINE_CONFIGURATION_UNINITIALIZED;
+        
+        int errc = peak_engine_configuration_create_default(&configuration,
+                                                            PEAK_DEFAULT_ALLOCATOR,
+                                                            peak_hardware_default_mapping);
+        assert(PEAK_SUCCESS == errc);
+        
+        peak_raw_dispatcher_configuration_s affine_dispatcher_configuration;
+        char const* const affine_dispatcher_name = "affine dispatcher test";
+        
+        peak_dispatcher_configuration_init(&affine_dispatcher_configuration)
+        peak_dispatcher_configuration_set_worker_affinity(&affine_dispatcher_configuration);
+        
+        // Copies the 0 terminated string. Do not forget to finalize the 
+        // dispatcher configuration not to leak the memory.
+        errc = peak_dispatcher_configuration_set_name(&affine_dispatcher_configuration,
+                                                      PEAK_DEFAULT_ALLOCATOR,
+                                                      affine_dispatcher_name);
+        CHECK_EQUAL(PEAK_SUCCESS, err);
+        
+        std::size_t const worker_count = peak_engine_configuration_worker_count(configuration,
+                                                                                0, /* Package */
+                                                                                0 /* Workgroup */
+                                                                                );
+        CHECK(static_cast<std::size_t>(0) < worker_count);
+        
+        // If more than one worker belong to the first workgroup of the first
+        // package then add the worker affine dispatcher into the second
+        // worker so it does not belong to the default main execution context
+        // executed by the user. If only one worker per workgroup exists put
+        // it on the first worker nonetheless.
+        
+        struct peak_dispatcher_key_s affine_dispatcher_key;
+        
+        if (static_cast<std::size_t>(1) < worker_count) {
+            
+            errc = peak_engine_configuration_worker_add_dispatcher(configuration,
+                                                                   PEAK_DEFAULT_ALLOCATOR,
+                                                                   0,
+                                                                   0,
+                                                                   1,
+                                                                   &affine_dispatcher_configuration,
+                                                                   &affine_dispatcher_key);
+            CHECK_EQUAL(PEAK_SUCCESS, errc);
+            
+            
+        } else if (static_cast<std::size_t>(1) == worker_count) {
+            
+            errc = peak_engine_configuration_worker_add_dispatcher(configuration,
+                                                                   PEAK_DEFAULT_ALLOCATOR,
+                                                                   0,
+                                                                   0,
+                                                                   0,
+                                                                   &affine_dispatcher_configuration,
+                                                                   &affine_dispatcher_key);
+            CHECK_EQUAL(PEAK_SUCCESS, errc);
+            
+        }
+        
+        
+        
+        
+        errc = peak_dispatcher_configuration_finalize(&affine_dispatcher_configuration,
+                                                      PEAK_DEFAULT_ALLOCATOR);
+        CHECK_EQUAL(PEAK_SUCCESS, err);
+        
+        
+        errc = peak_engine_configuration_destroy(&configuration,
+                                                 PEAK_DEFAULT_ALLOCATOR);
+        assert(PEAK_SUCCESS == errc);
+    }
+        
+        
+ 
+            
+    
+    
+    
     
 /*
     
