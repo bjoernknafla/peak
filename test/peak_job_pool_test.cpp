@@ -10,23 +10,366 @@
 
 #include <UnitTest++.h>
 
+#include <cassert>
+#include <cstddef>
+
+#include <amp/amp.h>
+#include <peak/peak_stddef.h>
+#include <peak/peak_stdint.h>
+#include <peak/peak_return_code.h>
+#include <peak/peak_data_alignment.h>
+#include <peak/peak_allocator.h>
 
 
 namespace {
     
-    /**
-     * TODO: @todo Add detection and mapping for multiple cache hierarchies and
-     *             packages.
-     */
+    uint8_t const peak_engine_node_path_ignore_package_level = UINT8_MAX;
+    uint8_t const peak_engine_node_path_ignore_workgroup_level = UINT8_MAX;
+    uint16_t const peak_engine_node_path_ignore_worker_level = UINT16_MAX;
+    
+    union peak_engine_node_path_s {
+        uint32_t key;
+        struct peak_internal_engine_path_hierarchy_s {
+            uint8_t package;
+            uint8_t workgroup;
+            uint16_t worker;
+        } hierarchy;
+    };
+    typedef union peak_engine_node_path_s peak_engine_node_path_t;
+    
+    peak_engine_node_path_t peak_engine_node_path_make_from_hierarchy(uint8_t package_id,
+                                                            uint8_t workgroup_id,
+                                                            uint16_t worker_id);
+    peak_engine_node_path_t peak_engine_node_path_make_from_hierarchy(uint8_t package_id,
+                                                            uint8_t workgroup_id,
+                                                            uint16_t worker_id)
+    {
+        peak_engine_node_path_t path;
+        path.hierarchy.package = package_id;
+        path.hierarchy.workgroup = workgroup_id;
+        path.hierarchy.worker = worker_id;
+        
+        return path;
+    }
+    
+    
+    
+    struct peak_engine_node_dispatcher_path_s {
+        peak_engine_node_path_t engine_path;
+        uint32_t dispatcher_id;
+    };
+    typedef struct peak_engine_node_dispatcher_path_s peak_engine_node_dispatcher_path_t;
+    
+    
+    
+    enum peak_worker_execution_configuration {
+        peak_autonomous_controlled_worker_execution_configuration,
+        peak_user_controlled_worker_execution_configuration
+    };
+    typedef enum peak_worker_execution_configuration peak_worker_execution_configuration_t;
+    
+    
+    enum peak_affinity_dispatcher_configuration {
+        peak_engine_affinity_dispatcher_configuration, // Effectivly no affinity
+        peak_worker_affinity_dispatcher_configuration
+    };
+    typedef enum peak_affinity_dispatcher_configuration peak_affinity_dispatcher_configuration_t;
+    
+    
+    
+    //
+    //TODO: @todo Add detection and mapping for multiple cache hierarchies and
+    //            packages.
+    //
     struct peak_hardware_s {
         
     };
     
+    enum peak_engine_hardware_mapping {
+        peak_default_engine_hardware_mapping
+    };
+    typedef enum peak_engine_hardware_mapping peak_engine_hardware_mapping;
+    
+    
+    
+    
+    struct peak_range_s {
+        size_t start_index;
+        size_t length;
+    };
+    typedef struct peak_range_s peak_range_t;
+    
+    
+    peak_range_t peak_range_make(size_t range_start_index,
+                                 size_t range_length);
+    peak_range_t peak_range_make(size_t range_start_index,
+                                 size_t range_length)
+    {
+        peak_range_t range = {range_start_index, range_length};
+        return range;
+    }
+    
+    
+    
+    struct peak_dispatcher_configuration_s {
+        peak_affinity_dispatcher_configuration_t affinity;
+    };
+    typedef struct peak_dispatcher_configuration_s peak_dispatcher_configuration_t;
+    
+    
+    
+    
+    
+#define PEAK_INTERNAL_ENGINE_NODE_DISPATCHER_CAPACITY ((size_t)8)
+    
+    
+    struct peak_workgroup_configuration_s {
+#define PEAK_INTERNAL_ENGINE_WORKGROUP_NODE_DISPATCHER_CAPACITY PEAK_INTERNAL_ENGINE_NODE_DISPATCHER_CAPACITY          
+        size_t dispatcher_count;
+        peak_dispatcher_configuration_t dispatchers[PEAK_INTERNAL_ENGINE_WORKGROUP_NODE_DISPATCHER_CAPACITY];
+        
+        
+        peak_range_t index_range_of_workers_in_package;
+    };
+    typedef struct peak_workgroup_configuration_s peak_workgroup_configuration_t;
+    
+    
+    struct peak_worker_configuration_s {
+        
+        peak_worker_execution_configuration_t execution_configuration;
+        
+        
+#define PEAK_INTERNAL_ENGINE_WORKER_NODE_DISPATCHER_CAPACITY PEAK_INTERNAL_ENGINE_NODE_DISPATCHER_CAPACITY         
+        size_t dispatcher_count;
+        peak_dispatcher_configuration_t dispatchers[PEAK_INTERNAL_ENGINE_WORKER_NODE_DISPATCHER_CAPACITY];
+    };
+    typedef struct peak_worker_configuration_s peak_worker_configuration_t;
+    
+    
+    // Workgroup path indices are always package internal - do not mix 
+    // workgroup path indices from different packages!
+    // Worker path indices are always workgroup internal - do not mix
+    // worker path indices from different workgroups.
+    struct peak_package_configuration_s {
+#define PEAK_INTERNAL_ENGINE_PACKAGE_NODE_DISPATCHER_CAPACITY PEAK_INTERNAL_ENGINE_NODE_DISPATCHER_CAPACITY 
+        size_t dispatcher_count;
+        peak_dispatcher_configuration_t dispatchers[PEAK_INTERNAL_ENGINE_PACKAGE_NODE_DISPATCHER_CAPACITY];
+        
+        // TODO: @todo Create different package areas for different architecture 
+        //             ISAs.
+        size_t workgroup_count;
+        peak_workgroup_configuration_t* workgroups;
+        
+        size_t worker_count;
+        peak_worker_configuration_t* workers;
+        
+        
+    };
+    typedef struct peak_package_configuration_s peak_package_configuration_t;
     
     
     struct peak_engine_configuration_s {
+#define PEAK_INTERNAL_ENGINE_MACHINE_NODE_DISPATCHER_CAPACITY PEAK_INTERNAL_ENGINE_NODE_DISPATCHER_CAPACITY
+        size_t dispatcher_count;
         
+        peak_dispatcher_configuration_t dispatchers[PEAK_INTERNAL_ENGINE_MACHINE_NODE_DISPATCHER_CAPACITY];
+        
+        size_t package_count;
+        peak_package_configuration_t* packages;
     };
+    typedef struct peak_engine_configuration_s* peak_engine_configuration_t;
+    
+    
+    peak_engine_configuration_t const peak_engine_configuration_uninitialized = NULL;
+#define PEAK_ENGINE_CONFIGURATION_UNINITIALIZED (peak_engine_configuration_uninitialized)
+    
+    
+    
+    
+
+    
+
+    
+    
+    int peak_engine_configuration_create_default(peak_engine_configuration_t* configuration,
+                                                 peak_allocator_t allocator,
+                                                 peak_engine_hardware_mapping mapping);
+    
+    int peak_engine_configuration_create_default(peak_engine_configuration_t* configuration,
+                                                 peak_allocator_t allocator,
+                                                 peak_engine_hardware_mapping mapping)
+    {
+        peak_engine_configuration_t tmp_config = NULL;
+        int return_value = PEAK_UNSUPPORTED;
+        
+        assert(NULL != configuration);
+        assert(NULL != allocator);
+        
+        tmp_config = (peak_engine_configuration_t)PEAK_ALLOC_ALIGNED(allocator,
+                                                                     PEAK_ATOMIC_ACCESS_ALIGNMENT,
+                                                                     sizeof(*tmp_config));
+        if (NULL != tmp_config) {
+            
+            
+            // TODO: @todo Add real hardware hierarchy detection.
+            
+            // Create one package, one workgroup and concurrency_level workers.
+            // Mark the first worker as being main thread controlled.
+            // Put one dispatcher into the engine/machine node.
+
+            
+            
+            
+            *configuration = tmp_config;
+            return_value = PEAK_SUCCESS;
+        } else {
+            return_value = PEAK_NOMEM;
+        }
+        
+        return return_value;
+    }
+    
+    
+    int peak_engine_configuration_destroy(peak_engine_configuration_t* configuration,
+                                                 peak_allocator_t allocator)
+    {
+        int return_value = PEAK_UNSUPPORTED;
+        
+        assert(NULL != configuration);
+        assert(NULL != allocator);
+        
+        return_value = PEAK_DEALLOC_ALIGNED(allocator,
+                                            *configuration);
+        if (PEAK_SUCCESS == return_value) {
+            *configuration = NULL;
+        }
+        
+        return return_value;
+    }
+    
+    
+    
+    size_t peak_engine_configuration_get_package_count(peak_engine_configuration_t config);
+    size_t peak_engine_configuration_get_package_count(peak_engine_configuration_t config)
+    {
+        return 0;
+    }
+    
+    size_t peak_engine_configuration_get_workgroup_count(peak_engine_configuration_t config,
+                                                         peak_engine_node_path_t for_node);
+    size_t peak_engine_configuration_get_workgroup_count(peak_engine_configuration_t config,
+                                                         peak_engine_node_path_t for_node)
+    {
+        return 0;
+    }
+    
+    
+ 
+    
+    // Returns PEAK_ERROR if no default dispatcher key exists.
+    int peak_engine_configuration_get_default_dispatcher_key(peak_engine_configuration_t configuration,
+                                                             peak_engine_node_dispatcher_path_t* key); 
+    int peak_engine_configuration_get_default_dispatcher_key(peak_engine_configuration_t configuration,
+                                                             peak_engine_node_dispatcher_path_t* key)
+    {
+        
+        return PEAK_ERROR;
+    }
+    
+    
+    int peak_engine_configuration_get_dispatcher_configuration(peak_engine_configuration_t engine_config,
+                                                               peak_engine_node_dispatcher_path_t key,
+                                                               peak_dispatcher_configuration_t* dispatcher_config);
+    int peak_engine_configuration_get_dispatcher_configuration(peak_engine_configuration_t engine_config,
+                                                               peak_engine_node_dispatcher_path_t key,
+                                                               peak_dispatcher_configuration_t* dispatcher_config)
+    {
+        return PEAK_ERROR;
+    }
+    
+    
+    
+    int peak_engine_configuration_get_worker_configuration(peak_engine_configuration_t engine_config,
+                                                           peak_engine_node_path_t path,
+                                                           peak_worker_configuration_t* worker_config);
+    int peak_engine_configuration_get_worker_configuration(peak_engine_configuration_t engine_config,
+                                                           peak_engine_node_path_t path,
+                                                           peak_worker_configuration_t* worker_config)
+    {
+        return PEAK_ERROR;
+    }
+    
+    
+    
+
+    
+    peak_worker_execution_configuration_t peak_worker_configuration_get_execution_configuration(peak_worker_configuration_t const* worker_config);
+    peak_worker_execution_configuration_t peak_worker_configuration_get_execution_configuration(peak_worker_configuration_t const* worker_config)
+    {
+        return peak_autonomous_controlled_worker_execution_configuration;
+    }
+    
+    
+    void peak_dispatcher_configuration_init(peak_dispatcher_configuration_t* dispatcher_config);
+    void peak_dispatcher_configuration_init(peak_dispatcher_configuration_t* dispatcher_config)
+    {
+        // TODO: @todo Implement!
+    }
+    
+    int peak_dispatcher_configuration_finalize(peak_dispatcher_configuration_t* dispatcher_config,
+                                               peak_allocator_t allocator);
+    int peak_dispatcher_configuration_finalize(peak_dispatcher_configuration_t* dispatcher_config,
+                                               peak_allocator_t allocator)
+    {
+        return PEAK_ERROR;
+    }
+    
+    
+
+    
+    void peak_dispatcher_configuration_set_affinity(peak_dispatcher_configuration_t* dispatcher_config,
+                                                    peak_affinity_dispatcher_configuration_t affinity);
+    void peak_dispatcher_configuration_set_affinity(peak_dispatcher_configuration_t* dispatcher_config,
+                                                    peak_affinity_dispatcher_configuration_t affinity)
+    {
+        // TODO: @todo Implement.
+    }
+    
+    
+    
+    int peak_dispatcher_configuration_set_name(peak_dispatcher_configuration_t* dispatcher_config,
+                                               peak_allocator_t allocator,
+                                               char const* name);
+    int peak_dispatcher_configuration_set_name(peak_dispatcher_configuration_t* dispatcher_config,
+                                               peak_allocator_t allocator,
+                                               char const* name)
+    {
+        return PEAK_ERROR;
+    }
+    
+    
+    size_t peak_engine_configuration_get_worker_count(peak_engine_configuration_t engine_config,
+                                                      peak_engine_node_path_t for_node);
+    size_t peak_engine_configuration_get_worker_count(peak_engine_configuration_t engine_config,
+                                                      peak_engine_node_path_t for_node)
+    {
+        return 0;
+    }
+    
+    
+    int peak_engine_configuration_add_dispatcher(peak_engine_configuration_t engine_config,
+                                                 peak_allocator_t allocator,
+                                                 peak_engine_node_path_t node_path,
+                                                 peak_dispatcher_configuration_t const* dispatcher_config,
+                                                 peak_engine_node_dispatcher_path_t* result_dispatcher_path);
+    int peak_engine_configuration_add_dispatcher(peak_engine_configuration_t engine_config,
+                                                 peak_allocator_t allocator,
+                                                 peak_engine_node_path_t node_path,
+                                                 peak_dispatcher_configuration_t const* dispatcher_config,
+                                                 peak_engine_node_dispatcher_path_t* result_dispatcher_path)
+    {
+        return PEAK_ERROR;
+    }
     
     /*
     struct peak_dispatcher_configuration_s {
@@ -61,20 +404,20 @@ namespace {
     */
     
     
-    /* Maps engine hierarchy to hardware of computer, no selection of 
-     * sub-nodes in the hierarchy to pin the engine to.
-     *
-     * First allocator is uses for core engine structure allocation while
-     * the second allocator is used internally to access memory.
-     * The second allocator is assumed to be thread-safe.
-     *
-     * TODO: @todo Add an allocator concept that adapts the second allocator
-     *             to provide thread-safety without requeiring it from the
-     *             second allocator.
-     */
+    // Maps engine hierarchy to hardware of computer, no selection of 
+    //sub-nodes in the hierarchy to pin the engine to.
+    //
+    //First allocator is uses for core engine structure allocation while
+    //the second allocator is used internally to access memory.
+    //The second allocator is assumed to be thread-safe.
+    //
+    //TODO: @todo Add an allocator concept that adapts the second allocator
+                //to provide thread-safety without requeiring it from the
+                //second allocator.
+    //
     // peak_engine_create_default(&engine,
-    //                           PEAK_DEFAULT_ALLOCATOR, /* Allocate core engine */
-    //                           PEAK_DEFAULT_ALLOCATOR); /* Foundation for execution context local allocators */
+    //                           PEAK_DEFAULT_ALLOCATOR, // Allocate core engine
+    //                           PEAK_DEFAULT_ALLOCATOR); // Foundation for execution context local allocators
     
 } // anonymous namespace
 
@@ -92,7 +435,7 @@ SUITE(peak_job_pool)
         
         int errc = peak_engine_configuration_create_default(&configuration,
                                                             PEAK_DEFAULT_ALLOCATOR,
-                                                            peak_hardware_default_mapping);
+                                                            peak_default_engine_hardware_mapping);
         CHECK_EQUAL(PEAK_SUCCESS, errc);
         
         
@@ -104,22 +447,26 @@ SUITE(peak_job_pool)
         errc = amp_platform_get_concurrency_level(platform, &concurrency_level);
         assert(AMP_SUCCESS == errc);
         
-        errc = amp_platform_destroy(platform, AMP_DEFAULT_ALLOCATOR);
+        errc = amp_platform_destroy(&platform, AMP_DEFAULT_ALLOCATOR);
         assert(AMP_SUCCESS == errc);
         
                 
+        peak_engine_node_path_t machine_node_path = peak_engine_node_path_make_from_hierarchy(peak_engine_node_path_ignore_package_level, peak_engine_node_path_ignore_workgroup_level, peak_engine_node_path_ignore_worker_level);
+        
         // TODO: @todo Add better hardware hierarchy detection and checks.
         // Will fail on hardware with more cores grouped around caches the 
         // moment peak detects such hardware and is able to adapt to it. 
         // In such an event more assumptions of this test need to be checked.
         CHECK_EQUAL(static_cast<size_t>(1), 
-                    peak_engine_configuration_get_total_package_count(configuration));
+                    peak_engine_configuration_get_package_count(configuration));
         
         CHECK_EQUAL(static_cast<size_t>(1), 
-                    peak_engine_configuration_get_total_workgroup_count(configuration));
+                    peak_engine_configuration_get_workgroup_count(configuration,
+                                                                  machine_node_path));
         
         CHECK_EQUAL(concurrency_level, 
-                    peak_engine_configuration_get_total_worker_count(configuration));
+                    peak_engine_configuration_get_worker_count(configuration,
+                                                               machine_node_path));
 
         
         
@@ -140,29 +487,31 @@ SUITE(peak_job_pool)
         
         int errc = peak_engine_configuration_create_default(&configuration,
                                                             PEAK_DEFAULT_ALLOCATOR,
-                                                            peak_hardware_default_mapping);
+                                                            peak_default_engine_hardware_mapping);
         assert(PEAK_SUCCESS == errc);
         
         
-        peak_dispatcher_key_t dispatcher_key;
+        peak_engine_node_dispatcher_path_t dispatcher_key;
         errc = peak_engine_configuration_get_default_dispatcher_key(configuration,
                                                                     &dispatcher_key);
         CHECK_EQUAL(PEAK_SUCCESS, errc);
-        CHECK(PEAK_DISPATCHER_KEY_INVALID != dispatcher_key);
+        // CHECK(PEAK_DISPATCHER_KEY_INVALID != dispatcher_key);
         
-        struct peak_raw_dispatcher_configuration_s dispatcher_configuration;
-        errc = peak_engine_configuration_get_default_dispatcher_configuration(configuration,
-                                                                              &dispatcher_configuration);
+        struct peak_dispatcher_configuration_s dispatcher_configuration;
+        errc = peak_engine_configuration_get_dispatcher_configuration(configuration,
+                                                                      dispatcher_key,
+                                                                      &dispatcher_configuration);
         CHECK_EQUAL(PEAK_SUCCESS, errc);
         
         // TODO: @todo Add checks for the configuration settings.
         CHECK(false);
         
-        struct peak_raw_worker_configuration_s worker_configuration;
+        
+        peak_engine_node_path_t main_thread_worker_node_path = peak_engine_node_path_make_from_hierarchy(0, 0, 0);
+        
+        struct peak_worker_configuration_s worker_configuration;
         errc = peak_engine_configuration_get_worker_configuration(configuration,
-                                                                  0, /* Package */
-                                                                  0, /* Workgroup */
-                                                                  0, /* Worker */
+                                                                  main_thread_worker_node_path,
                                                                   &worker_configuration);
         CHECK_EQUAL(PEAK_SUCCESS, errc);
         
@@ -170,8 +519,8 @@ SUITE(peak_job_pool)
         // of the first worker of
         // the first workgroup of the first package of the machine and needs
         // to explicitly call the worker to execute.
-        CHECK_EQUAL(PEAK_WORKER_USER_EXECUTION_CONFIGURATION,
-                    peak_worker_configuration_get_execution_configuration());
+        CHECK_EQUAL(peak_user_controlled_worker_execution_configuration,
+                    peak_worker_configuration_get_execution_configuration(&worker_configuration));
         
         // TODO: @todo Add further worker configuration checks, e.g. for FIFO 
         //             and work-stealing queue.
@@ -190,26 +539,26 @@ SUITE(peak_job_pool)
         
         int errc = peak_engine_configuration_create_default(&configuration,
                                                             PEAK_DEFAULT_ALLOCATOR,
-                                                            peak_hardware_default_mapping);
+                                                            peak_default_engine_hardware_mapping);
         assert(PEAK_SUCCESS == errc);
         
-        peak_raw_dispatcher_configuration_s affine_dispatcher_configuration;
+        struct peak_dispatcher_configuration_s affine_dispatcher_configuration;
         char const* const affine_dispatcher_name = "affine dispatcher test";
         
-        peak_dispatcher_configuration_init(&affine_dispatcher_configuration)
-        peak_dispatcher_configuration_set_worker_affinity(&affine_dispatcher_configuration);
+        peak_dispatcher_configuration_init(&affine_dispatcher_configuration);
+        peak_dispatcher_configuration_set_affinity(&affine_dispatcher_configuration,
+                                                   peak_worker_affinity_dispatcher_configuration);
         
         // Copies the 0 terminated string. Do not forget to finalize the 
         // dispatcher configuration not to leak the memory.
         errc = peak_dispatcher_configuration_set_name(&affine_dispatcher_configuration,
                                                       PEAK_DEFAULT_ALLOCATOR,
                                                       affine_dispatcher_name);
-        CHECK_EQUAL(PEAK_SUCCESS, err);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
         
-        std::size_t const worker_count = peak_engine_configuration_worker_count(configuration,
-                                                                                0, /* Package */
-                                                                                0 /* Workgroup */
-                                                                                );
+        peak_engine_node_path_t first_workgroup_path = peak_engine_node_path_make_from_hierarchy(0, 0, peak_engine_node_path_ignore_worker_level);
+        std::size_t const worker_count = peak_engine_configuration_get_worker_count(configuration,
+                                                                                    first_workgroup_path);
         CHECK(static_cast<std::size_t>(0) < worker_count);
         
         // If more than one worker belong to the first workgroup of the first
@@ -218,39 +567,31 @@ SUITE(peak_job_pool)
         // executed by the user. If only one worker per workgroup exists put
         // it on the first worker nonetheless.
         
-        struct peak_dispatcher_key_s affine_dispatcher_key;
+        peak_engine_node_path_t affine_dispatcher_node_path;
         
         if (static_cast<std::size_t>(1) < worker_count) {
             
-            errc = peak_engine_configuration_worker_add_dispatcher(configuration,
-                                                                   PEAK_DEFAULT_ALLOCATOR,
-                                                                   0,
-                                                                   0,
-                                                                   1,
-                                                                   &affine_dispatcher_configuration,
-                                                                   &affine_dispatcher_key);
-            CHECK_EQUAL(PEAK_SUCCESS, errc);
+            affine_dispatcher_node_path = peak_engine_node_path_make_from_hierarchy(0, 0, 1);
             
             
         } else if (static_cast<std::size_t>(1) == worker_count) {
             
-            errc = peak_engine_configuration_worker_add_dispatcher(configuration,
-                                                                   PEAK_DEFAULT_ALLOCATOR,
-                                                                   0,
-                                                                   0,
-                                                                   0,
-                                                                   &affine_dispatcher_configuration,
-                                                                   &affine_dispatcher_key);
-            CHECK_EQUAL(PEAK_SUCCESS, errc);
+            affine_dispatcher_node_path = peak_engine_node_path_make_from_hierarchy(0, 0, 0);
             
         }
         
         
-        
+        struct peak_engine_node_dispatcher_path_s affine_dispatcher_path;
+        errc = peak_engine_configuration_add_dispatcher(configuration,
+                                                        PEAK_DEFAULT_ALLOCATOR,
+                                                        affine_dispatcher_node_path,
+                                                        &affine_dispatcher_configuration,
+                                                        &affine_dispatcher_path);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
         
         errc = peak_dispatcher_configuration_finalize(&affine_dispatcher_configuration,
                                                       PEAK_DEFAULT_ALLOCATOR);
-        CHECK_EQUAL(PEAK_SUCCESS, err);
+        CHECK_EQUAL(PEAK_SUCCESS, errc);
         
         
         errc = peak_engine_configuration_destroy(&configuration,
